@@ -1,0 +1,91 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs/*.log
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Stream files (generated at runtime)
+stream/*.m3u8
+stream/*.ts
+stream/segment_*
+
+# Screenshots and temporary images
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+temp/
+screenshots/
+
+# Game files (may be copyrighted - add manually)
+games/*.tzx
+games/*.tap
+games/*.z80
+games/*.sna
+!games/.gitkeep
+
+# System files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Runtime directories
+tmp/
+temp/
+cache/
+
+# Backup files
+*.bak
+*.backup
+*~
