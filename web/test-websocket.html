@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .log { background: #f0f0f0; padding: 10px; height: 300px; overflow-y: scroll; margin: 10px 0; }
+        button { padding: 10px; margin: 5px; }
+        .connected { color: green; }
+        .disconnected { color: red; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Connection Test</h1>
+    
+    <div>
+        <label>WebSocket URL:</label>
+        <input type="text" id="wsUrl" value="wss://d112s3ps8xh739.cloudfront.net/ws/" style="width: 400px;">
+    </div>
+    
+    <div>
+        <button onclick="connect()">Connect</button>
+        <button onclick="disconnect()">Disconnect</button>
+        <button onclick="sendTest()">Send Test Message</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+    
+    <div>Status: <span id="status" class="disconnected">Disconnected</span></div>
+    
+    <div class="log" id="log"></div>
+    
+    <script>
+        let ws = null;
+        
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'connected' ? 'connected' : '';
+            logDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function updateStatus(status) {
+            const statusSpan = document.getElementById('status');
+            statusSpan.textContent = status;
+            statusSpan.className = status.toLowerCase();
+        }
+        
+        function connect() {
+            const url = document.getElementById('wsUrl').value;
+            log(`Attempting to connect to: ${url}`);
+            
+            try {
+                ws = new WebSocket(url);
+                
+                ws.onopen = function(event) {
+                    log('WebSocket connection opened!', 'connected');
+                    updateStatus('Connected');
+                };
+                
+                ws.onmessage = function(event) {
+                    log(`Received message: ${event.data}`, 'connected');
+                };
+                
+                ws.onclose = function(event) {
+                    log(`WebSocket connection closed. Code: ${event.code}, Reason: ${event.reason}`, 'error');
+                    updateStatus('Disconnected');
+                };
+                
+                ws.onerror = function(error) {
+                    log(`WebSocket error: ${error}`, 'error');
+                    updateStatus('Error');
+                };
+                
+            } catch (error) {
+                log(`Failed to create WebSocket: ${error}`, 'error');
+                updateStatus('Error');
+            }
+        }
+        
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+                log('Disconnected by user');
+                updateStatus('Disconnected');
+            }
+        }
+        
+        function sendTest() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const testMessage = JSON.stringify({
+                    type: 'test',
+                    message: 'Hello from test page!',
+                    timestamp: new Date().toISOString()
+                });
+                ws.send(testMessage);
+                log(`Sent test message: ${testMessage}`);
+            } else {
+                log('WebSocket is not connected', 'error');
+            }
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        // Auto-connect on page load
+        window.onload = function() {
+            log('Page loaded. Click Connect to test WebSocket connection.');
+        };
+    </script>
+</body>
+</html>

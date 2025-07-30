@@ -1,0 +1,6 @@
+# Additional requirements for Docker deployment
+gunicorn>=21.2.0
+uvicorn[standard]>=0.24.0
+fastapi>=0.104.0
+boto3>=1.34.0
+botocore>=1.34.0

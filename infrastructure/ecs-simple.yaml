@@ -1,0 +1,124 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Simple ECS Service for ZX Spectrum Emulator Backend'
+
+Parameters:
+  Environment:
+    Type: String
+    Description: 'Environment name'
+    Default: 'dev'
+  
+  InfrastructureStackName:
+    Type: String
+    Description: 'Name of the infrastructure CloudFormation stack'
+    Default: 'spectrum-emulator-infrastructure'
+
+Resources:
+  # ECS Cluster
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub 'spectrum-emulator-cluster-${Environment}'
+
+  # CloudWatch Log Group
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/ecs/spectrum-emulator-${Environment}'
+      RetentionInDays: 7
+
+  # ECS Task Execution Role
+  TaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+  # Security Group for ECS Tasks
+  ECSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for ECS tasks
+      VpcId:
+        Fn::ImportValue: !Sub '${InfrastructureStackName}-VPCId'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8765
+          ToPort: 8765
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+
+  # ECS Task Definition
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub 'spectrum-emulator-${Environment}'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: 1024
+      Memory: 2048
+      ExecutionRoleArn: !Ref TaskExecutionRole
+      ContainerDefinitions:
+        - Name: spectrum-emulator
+          Image: public.ecr.aws/docker/library/ubuntu:22.04
+          Essential: true
+          PortMappings:
+            - ContainerPort: 8765
+              Protocol: tcp
+            - ContainerPort: 8080
+              Protocol: tcp
+          Environment:
+            - Name: ENVIRONMENT
+              Value: !Ref Environment
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+          Command:
+            - /bin/bash
+            - -c
+            - |
+              apt-get update && apt-get install -y python3 python3-pip curl
+              echo "Container started - install your emulator here"
+              python3 -m http.server 8080 &
+              while true; do
+                echo "Health check OK" | nc -l -p 8765 || sleep 5
+              done
+
+  # ECS Service
+  ECSService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: !Sub 'spectrum-emulator-service-${Environment}'
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref TaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+            - !Ref ECSSecurityGroup
+          Subnets:
+            - Fn::ImportValue: !Sub '${InfrastructureStackName}-PublicSubnet1'
+            - Fn::ImportValue: !Sub '${InfrastructureStackName}-PublicSubnet2'
+
+Outputs:
+  ECSClusterName:
+    Description: 'ECS Cluster Name'
+    Value: !Ref ECSCluster
+
+  ECSServiceName:
+    Description: 'ECS Service Name'
+    Value: !Ref ECSService

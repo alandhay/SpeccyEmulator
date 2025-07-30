@@ -1,0 +1,44 @@
+{
+  "family": "spectrum-emulator-dev",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "arn:aws:iam::043309319786:role/spectrum-emulator-ecs-TaskExecutionRole-Ej8Ej8Ej8Ej8",
+  "containerDefinitions": [
+    {
+      "name": "spectrum-emulator",
+      "image": "python:3.11-slim",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8765,
+          "protocol": "tcp"
+        },
+        {
+          "containerPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "ENVIRONMENT",
+          "value": "dev"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/spectrum-emulator-dev",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "command": [
+        "/bin/bash",
+        "-c",
+        "apt-get update && apt-get install -y curl && pip install websockets aiohttp && python -c \"import asyncio, websockets, json, logging; from aiohttp import web; logging.basicConfig(level=logging.INFO); logger = logging.getLogger(__name__); connected_clients = set(); exec(open('/dev/stdin').read())\" << 'PYTHON'\nimport asyncio\nimport websockets\nimport json\nimport logging\nfrom aiohttp import web\n\nlogging.basicConfig(level=logging.INFO)\nlogger = logging.getLogger(__name__)\nconnected_clients = set()\n\nasync def handle_websocket(websocket, path):\n    logger.info(f'New client connected from {websocket.remote_address}')\n    connected_clients.add(websocket)\n    try:\n        await websocket.send(json.dumps({\n            'type': 'connected',\n            'message': 'Connected to ZX Spectrum Emulator Server',\n            'emulator_running': False\n        }))\n        async for message in websocket:\n            data = json.loads(message)\n            logger.info(f'Received: {data}')\n            await websocket.send(json.dumps({\n                'type': 'status',\n                'emulator_running': False,\n                'message': 'Server is running - emulator functionality coming soon!'\n            }))\n    except websockets.exceptions.ConnectionClosed:\n        logger.info('Client disconnected')\n    finally:\n        connected_clients.discard(websocket)\n\nasync def health_check(request):\n    return web.Response(text='OK', status=200)\n\nasync def main():\n    app = web.Application()\n    app.router.add_get('/health', health_check)\n    runner = web.AppRunner(app)\n    await runner.setup()\n    site = web.TCPSite(runner, '0.0.0.0', 8080)\n    await site.start()\n    logger.info('HTTP server started on port 8080')\n    server = await websockets.serve(handle_websocket, '0.0.0.0', 8765)\n    logger.info('WebSocket server started on port 8765')\n    await server.wait_closed()\n\nif __name__ == '__main__':\n    asyncio.run(main())\nPYTHON"
+      ]
+    }
+  ]
+}

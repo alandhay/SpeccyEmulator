@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZX Spectrum Emulator</title>
+    <link rel="stylesheet" href="css/spectrum.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ZX Spectrum Emulator</h1>
+            <div class="status-bar">
+                <span id="connection-status" class="status disconnected">Disconnected</span>
+                <span id="emulator-status" class="status stopped">Emulator Stopped</span>
+                <span id="game-status" class="status">No Game Loaded</span>
+            </div>
+        </header>
+
+        <main>
+            <div class="emulator-section">
+                <div class="screen-container">
+                    <div class="spectrum-screen">
+                        <video id="emulator-video" autoplay muted>
+                            <p>Your browser doesn't support video streaming.</p>
+                        </video>
+                        <div id="loading-screen" class="loading-screen">
+                            <div class="spectrum-logo">
+                                <div class="rainbow-stripe red"></div>
+                                <div class="rainbow-stripe orange"></div>
+                                <div class="rainbow-stripe yellow"></div>
+                                <div class="rainbow-stripe green"></div>
+                                <div class="rainbow-stripe blue"></div>
+                                <div class="rainbow-stripe indigo"></div>
+                                <div class="rainbow-stripe violet"></div>
+                            </div>
+                            <h2>ZX SPECTRUM</h2>
+                            <p>Click "Start Emulator" to begin</p>
+                        </div>
+                    </div>
+                    
+                    <div class="screen-controls">
+                        <button id="start-btn" class="control-btn primary">Start Emulator</button>
+                        <button id="stop-btn" class="control-btn secondary" disabled>Stop Emulator</button>
+                        <button id="screenshot-btn" class="control-btn" disabled>Screenshot</button>
+                        <button id="fullscreen-btn" class="control-btn">Fullscreen</button>
+                    </div>
+                </div>
+
+                <div class="game-loader">
+                    <h3>Load Game</h3>
+                    <select id="game-select">
+                        <option value="">Select a game...</option>
+                    </select>
+                    <button id="load-game-btn" class="control-btn" disabled>Load Game</button>
+                    <input type="file" id="game-upload" accept=".tzx,.tap,.z80,.sna" style="display: none;">
+                    <button id="upload-btn" class="control-btn">Upload Game</button>
+                </div>
+            </div>
+
+            <div class="keyboard-section">
+                <h3>ZX Spectrum Keyboard</h3>
+                <div class="spectrum-keyboard">
+                    <!-- Row 1 -->
+                    <div class="keyboard-row">
+                        <button class="key" data-key="1">1 !</button>
+                        <button class="key" data-key="2">2 @</button>
+                        <button class="key" data-key="3">3 #</button>
+                        <button class="key" data-key="4">4 $</button>
+                        <button class="key" data-key="5">5 %</button>
+                        <button class="key" data-key="6">6 &</button>
+                        <button class="key" data-key="7">7 '</button>
+                        <button class="key" data-key="8">8 (</button>
+                        <button class="key" data-key="9">9 )</button>
+                        <button class="key" data-key="0">0 _</button>
+                    </div>
+                    
+                    <!-- Row 2 -->
+                    <div class="keyboard-row">
+                        <button class="key" data-key="q">Q</button>
+                        <button class="key" data-key="w">W</button>
+                        <button class="key" data-key="e">E</button>
+                        <button class="key" data-key="r">R</button>
+                        <button class="key" data-key="t">T</button>
+                        <button class="key" data-key="y">Y</button>
+                        <button class="key" data-key="u">U</button>
+                        <button class="key" data-key="i">I</button>
+                        <button class="key" data-key="o">O</button>
+                        <button class="key" data-key="p">P</button>
+                    </div>
+                    
+                    <!-- Row 3 -->
+                    <div class="keyboard-row">
+                        <button class="key" data-key="a">A</button>
+                        <button class="key" data-key="s">S</button>
+                        <button class="key" data-key="d">D</button>
+                        <button class="key" data-key="f">F</button>
+                        <button class="key" data-key="g">G</button>
+                        <button class="key" data-key="h">H</button>
+                        <button class="key" data-key="j">J</button>
+                        <button class="key" data-key="k">K</button>
+                        <button class="key" data-key="l">L</button>
+                        <button class="key" data-key="enter" class="key-enter">ENTER</button>
+                    </div>
+                    
+                    <!-- Row 4 -->
+                    <div class="keyboard-row">
+                        <button class="key key-shift" data-key="shift">CAPS SHIFT</button>
+                        <button class="key" data-key="z">Z</button>
+                        <button class="key" data-key="x">X</button>
+                        <button class="key" data-key="c">C</button>
+                        <button class="key" data-key="v">V</button>
+                        <button class="key" data-key="b">B</button>
+                        <button class="key" data-key="n">N</button>
+                        <button class="key" data-key="m">M</button>
+                        <button class="key key-shift" data-key="symbol">SYMBOL SHIFT</button>
+                    </div>
+                    
+                    <!-- Row 5 -->
+                    <div class="keyboard-row">
+                        <button class="key key-space" data-key="space">SPACE</button>
+                    </div>
+                </div>
+                
+                <div class="keyboard-help">
+                    <p><strong>Tip:</strong> You can also use your physical keyboard. The ZX Spectrum keyboard layout is mapped to standard QWERTY.</p>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <div class="info-panel">
+                <div class="connection-info">
+                    <h4>Connection Info</h4>
+                    <p>WebSocket: <span id="ws-url">ws://localhost:8765</span></p>
+                    <p>Video Stream: <span id="stream-url">http://localhost:8080/stream/hls/stream.m3u8</span></p>
+                </div>
+                
+                <div class="controls-info">
+                    <h4>Controls</h4>
+                    <ul>
+                        <li><strong>F1:</strong> Help</li>
+                        <li><strong>F2:</strong> Save State</li>
+                        <li><strong>F3:</strong> Load State</li>
+                        <li><strong>F11:</strong> Fullscreen</li>
+                        <li><strong>Esc:</strong> Exit Fullscreen</li>
+                    </ul>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/hls.min.js"></script>
+    <script src="js/spectrum-emulator.js"></script>
+</body>
+</html>

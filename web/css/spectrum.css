@@ -1,0 +1,447 @@
+/* ZX Spectrum Emulator Styles */
+
+:root {
+    --spectrum-black: #000000;
+    --spectrum-blue: #0000ff;
+    --spectrum-red: #ff0000;
+    --spectrum-magenta: #ff00ff;
+    --spectrum-green: #00ff00;
+    --spectrum-cyan: #00ffff;
+    --spectrum-yellow: #ffff00;
+    --spectrum-white: #ffffff;
+    --spectrum-gray: #c0c0c0;
+    --spectrum-border: #808080;
+    
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --text-primary: #ffffff;
+    --text-secondary: #cccccc;
+    --accent-color: #00ff00;
+    --error-color: #ff4444;
+    --warning-color: #ffaa00;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Courier Prime', monospace;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header */
+header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: var(--bg-secondary);
+    border-radius: 10px;
+    border: 2px solid var(--spectrum-border);
+}
+
+header h1 {
+    font-size: 2.5em;
+    margin-bottom: 15px;
+    color: var(--spectrum-yellow);
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.status-bar {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.status {
+    padding: 5px 15px;
+    border-radius: 15px;
+    font-size: 0.9em;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.status.connected {
+    background: var(--spectrum-green);
+    color: var(--spectrum-black);
+}
+
+.status.disconnected {
+    background: var(--error-color);
+    color: var(--text-primary);
+}
+
+.status.running {
+    background: var(--spectrum-cyan);
+    color: var(--spectrum-black);
+}
+
+.status.stopped {
+    background: var(--spectrum-gray);
+    color: var(--spectrum-black);
+}
+
+/* Main Content */
+main {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 30px;
+}
+
+@media (min-width: 768px) {
+    main {
+        grid-template-columns: 2fr 1fr;
+    }
+}
+
+/* Emulator Section */
+.emulator-section {
+    background: var(--bg-secondary);
+    padding: 20px;
+    border-radius: 10px;
+    border: 2px solid var(--spectrum-border);
+}
+
+.screen-container {
+    margin-bottom: 20px;
+}
+
+.spectrum-screen {
+    position: relative;
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    background: var(--spectrum-black);
+    border: 8px solid var(--spectrum-gray);
+    border-radius: 15px;
+    overflow: hidden;
+    aspect-ratio: 4/3;
+}
+
+#emulator-video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: var(--spectrum-black);
+}
+
+.loading-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--spectrum-black);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    z-index: 10;
+}
+
+.spectrum-logo {
+    display: flex;
+    margin-bottom: 20px;
+}
+
+.rainbow-stripe {
+    width: 30px;
+    height: 60px;
+    margin: 0 2px;
+}
+
+.rainbow-stripe.red { background: var(--spectrum-red); }
+.rainbow-stripe.orange { background: #ff8800; }
+.rainbow-stripe.yellow { background: var(--spectrum-yellow); }
+.rainbow-stripe.green { background: var(--spectrum-green); }
+.rainbow-stripe.blue { background: var(--spectrum-blue); }
+.rainbow-stripe.indigo { background: #4400ff; }
+.rainbow-stripe.violet { background: var(--spectrum-magenta); }
+
+.loading-screen h2 {
+    font-size: 2em;
+    color: var(--spectrum-white);
+    margin-bottom: 10px;
+}
+
+.loading-screen p {
+    color: var(--spectrum-cyan);
+}
+
+.screen-controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.control-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-family: inherit;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+}
+
+.control-btn.primary {
+    background: var(--spectrum-green);
+    color: var(--spectrum-black);
+}
+
+.control-btn.secondary {
+    background: var(--spectrum-red);
+    color: var(--spectrum-white);
+}
+
+.control-btn:not(.primary):not(.secondary) {
+    background: var(--spectrum-blue);
+    color: var(--spectrum-white);
+}
+
+.control-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.control-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Game Loader */
+.game-loader {
+    background: var(--bg-primary);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid var(--spectrum-border);
+}
+
+.game-loader h3 {
+    color: var(--spectrum-yellow);
+    margin-bottom: 15px;
+}
+
+.game-loader select {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--spectrum-border);
+    border-radius: 4px;
+    font-family: inherit;
+}
+
+.game-loader button {
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+
+/* Keyboard Section */
+.keyboard-section {
+    background: var(--bg-secondary);
+    padding: 20px;
+    border-radius: 10px;
+    border: 2px solid var(--spectrum-border);
+}
+
+.keyboard-section h3 {
+    color: var(--spectrum-yellow);
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.spectrum-keyboard {
+    background: var(--spectrum-gray);
+    padding: 15px;
+    border-radius: 10px;
+    border: 3px solid var(--spectrum-black);
+}
+
+.keyboard-row {
+    display: flex;
+    justify-content: center;
+    gap: 3px;
+    margin-bottom: 3px;
+}
+
+.key {
+    background: var(--spectrum-white);
+    border: 2px solid var(--spectrum-black);
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-family: inherit;
+    font-size: 0.8em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    min-width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--spectrum-black);
+}
+
+.key:hover {
+    background: var(--spectrum-yellow);
+    transform: translateY(-1px);
+}
+
+.key:active {
+    background: var(--spectrum-cyan);
+    transform: translateY(1px);
+}
+
+.key-shift {
+    min-width: 80px;
+}
+
+.key-enter {
+    min-width: 60px;
+}
+
+.key-space {
+    min-width: 200px;
+}
+
+.keyboard-help {
+    margin-top: 15px;
+    padding: 10px;
+    background: var(--bg-primary);
+    border-radius: 5px;
+    font-size: 0.9em;
+    color: var(--text-secondary);
+}
+
+/* Footer */
+footer {
+    margin-top: 30px;
+    padding: 20px;
+    background: var(--bg-secondary);
+    border-radius: 10px;
+    border: 2px solid var(--spectrum-border);
+}
+
+.info-panel {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+}
+
+@media (min-width: 768px) {
+    .info-panel {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.info-panel h4 {
+    color: var(--spectrum-yellow);
+    margin-bottom: 10px;
+}
+
+.info-panel p, .info-panel li {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+}
+
+.info-panel ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.info-panel li {
+    margin-bottom: 5px;
+}
+
+/* Responsive Design */
+@media (max-width: 767px) {
+    .container {
+        padding: 10px;
+    }
+    
+    header h1 {
+        font-size: 2em;
+    }
+    
+    .status-bar {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .screen-controls {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .control-btn {
+        width: 100%;
+        max-width: 200px;
+    }
+    
+    .key {
+        min-width: 30px;
+        height: 35px;
+        padding: 4px 8px;
+        font-size: 0.7em;
+    }
+    
+    .key-shift {
+        min-width: 60px;
+    }
+    
+    .key-space {
+        min-width: 150px;
+    }
+}
+
+/* Fullscreen styles */
+.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1000;
+    background: var(--spectrum-black);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.fullscreen .spectrum-screen {
+    max-width: none;
+    width: 90vw;
+    height: 90vh;
+    max-height: calc(90vw * 3/4);
+}
+
+/* Animation for key presses */
+@keyframes keyPress {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+}
+
+.key.pressed {
+    animation: keyPress 0.1s ease;
+    background: var(--spectrum-cyan);
+}
