@@ -1,0 +1,56 @@
+{
+  "family": "spectrum-emulator-dev",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "arn:aws:iam::043309319786:role/spectrum-emulator-ecs-TaskExecutionRole-wCrluMDhLRXJ",
+  "containerDefinitions": [
+    {
+      "name": "spectrum-emulator",
+      "image": "ubuntu:22.04",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8765,
+          "protocol": "tcp"
+        },
+        {
+          "containerPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "ENVIRONMENT",
+          "value": "dev"
+        },
+        {
+          "name": "DISPLAY",
+          "value": ":99"
+        },
+        {
+          "name": "STREAM_BUCKET",
+          "value": "spectrum-emulator-stream-dev-043309319786"
+        },
+        {
+          "name": "DEBIAN_FRONTEND",
+          "value": "noninteractive"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/spectrum-emulator-dev",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "command": [
+        "/bin/bash",
+        "-c",
+        "set -e && echo 'Starting ZX Spectrum Emulator setup...' && apt-get update && apt-get install -y python3 python3-pip curl xvfb fuse-emulator-sdl ffmpeg awscli pulseaudio && pip3 install websockets aiohttp boto3 && echo 'Dependencies installed successfully' && export DISPLAY=:99 && echo 'Starting Xvfb...' && Xvfb :99 -screen 0 256x192x24 & sleep 3 && echo 'Starting PulseAudio...' && pulseaudio --start --exit-idle-time=-1 & echo 'Starting emulator server...' && python3 -c 'import asyncio, websockets, json, logging, subprocess, threading, time, os, boto3, signal; from aiohttp import web; from pathlib import Path; logging.basicConfig(level=logging.INFO); logger = logging.getLogger(__name__); class SpectrumEmulator: def __init__(self): self.connected_clients = set(); self.emulator_process = None; self.ffmpeg_process = None; self.stream_upload_thread = None; self.s3_client = boto3.client(\"s3\"); self.stream_bucket = os.environ.get(\"STREAM_BUCKET\", \"spectrum-emulator-stream-dev-043309319786\"); self.stream_dir = Path(\"/tmp/stream\"); self.stream_dir.mkdir(exist_ok=True); def start_emulator(self): try: if self.emulator_process: logger.info(\"Emulator already running\"); return True; logger.info(\"Starting FUSE ZX Spectrum emulator\"); self.emulator_process = subprocess.Popen([\"fuse-sdl\", \"--machine\", \"48\", \"--graphics-filter\", \"none\", \"--sound\", \"--no-confirm-actions\"], env={\"DISPLAY\": \":99\"}); time.sleep(3); self.start_video_stream(); logger.info(\"ZX Spectrum emulator started successfully\"); return True; except Exception as e: logger.error(f\"Failed to start emulator: {e}\"); self.stop_emulator(); return False; def start_video_stream(self): try: logger.info(\"Starting video stream capture\"); stream_file = self.stream_dir / \"stream.m3u8\"; self.ffmpeg_process = subprocess.Popen([\"ffmpeg\", \"-f\", \"x11grab\", \"-video_size\", \"256x192\", \"-framerate\", \"25\", \"-i\", \":99.0\", \"-c:v\", \"libx264\", \"-preset\", \"ultrafast\", \"-tune\", \"zerolatency\", \"-g\", \"25\", \"-f\", \"hls\", \"-hls_time\", \"2\", \"-hls_list_size\", \"5\", \"-hls_flags\", \"delete_segments+append_list\", \"-hls_segment_filename\", str(self.stream_dir / \"segment_%03d.ts\"), str(stream_file)]); if not self.stream_upload_thread or not self.stream_upload_thread.is_alive(): self.stream_upload_thread = threading.Thread(target=self.upload_stream_loop, daemon=True); self.stream_upload_thread.start(); logger.info(\"Video streaming started\"); return True; except Exception as e: logger.error(f\"Failed to start video stream: {e}\"); return False; def stop_emulator(self): logger.info(\"Stopping emulator and video stream\"); if self.ffmpeg_process: try: self.ffmpeg_process.terminate(); self.ffmpeg_process.wait(timeout=5); except subprocess.TimeoutExpired: self.ffmpeg_process.kill(); self.ffmpeg_process = None; if self.emulator_process: try: self.emulator_process.terminate(); self.emulator_process.wait(timeout=5); except subprocess.TimeoutExpired: self.emulator_process.kill(); self.emulator_process = None; logger.info(\"Emulator stopped\"); def upload_stream_loop(self): logger.info(\"Starting stream upload loop\"); while self.ffmpeg_process and self.ffmpeg_process.poll() is None: try: manifest_file = self.stream_dir / \"stream.m3u8\"; if manifest_file.exists(): self.s3_client.upload_file(str(manifest_file), self.stream_bucket, \"hls/stream.m3u8\", ExtraArgs={\"ContentType\": \"application/vnd.apple.mpegurl\"}); for ts_file in self.stream_dir.glob(\"segment_*.ts\"): try: self.s3_client.upload_file(str(ts_file), self.stream_bucket, f\"hls/{ts_file.name}\", ExtraArgs={\"ContentType\": \"video/mp2t\"}); except Exception as e: logger.debug(f\"Failed to upload {ts_file.name}: {e}\"); time.sleep(1); except Exception as e: logger.error(f\"Stream upload error: {e}\"); time.sleep(5); logger.info(\"Stream upload loop ended\"); async def handle_websocket(self, websocket, path): logger.info(f\"New WebSocket client connected\"); self.connected_clients.add(websocket); try: await websocket.send(json.dumps({\"type\": \"connected\", \"message\": \"Connected to ZX Spectrum Emulator Server\", \"emulator_running\": self.emulator_process is not None})); async for message in websocket: try: data = json.loads(message); await self.handle_message(websocket, data); except json.JSONDecodeError: logger.error(f\"Invalid JSON received: {message}\"); except websockets.exceptions.ConnectionClosed: logger.info(\"WebSocket client disconnected\"); except Exception as e: logger.error(f\"WebSocket error: {e}\"); finally: self.connected_clients.discard(websocket); async def handle_message(self, websocket, data): message_type = data.get(\"type\"); logger.info(f\"Received message: {message_type}\"); if message_type == \"start_emulator\": success = self.start_emulator(); await websocket.send(json.dumps({\"type\": \"emulator_status\", \"running\": success, \"message\": \"Emulator started successfully\" if success else \"Failed to start emulator\"})); elif message_type == \"stop_emulator\": self.stop_emulator(); await websocket.send(json.dumps({\"type\": \"emulator_status\", \"running\": False, \"message\": \"Emulator stopped\"})); elif message_type == \"key_press\": key = data.get(\"key\"); if key: logger.info(f\"Key pressed: {key}\"); await websocket.send(json.dumps({\"type\": \"key_response\", \"key\": key, \"message\": f\"Key {key} sent to emulator\"})); elif message_type == \"status\": await websocket.send(json.dumps({\"type\": \"status_response\", \"emulator_running\": self.emulator_process is not None, \"stream_active\": self.ffmpeg_process is not None, \"connected_clients\": len(self.connected_clients)})); else: await websocket.send(json.dumps({\"type\": \"error\", \"message\": f\"Unknown message type: {message_type}\"})); async def health_check(self, request): return web.Response(text=\"OK\", status=200); async def start_server(self): app = web.Application(); app.router.add_get(\"/health\", self.health_check); runner = web.AppRunner(app); await runner.setup(); site = web.TCPSite(runner, \"0.0.0.0\", 8080); await site.start(); logger.info(\"HTTP server started on port 8080\"); server = await websockets.serve(self.handle_websocket, \"0.0.0.0\", 8765); logger.info(\"WebSocket server started on port 8765\"); logger.info(\"ZX Spectrum Emulator Server is ready!\"); try: await server.wait_closed(); except KeyboardInterrupt: logger.info(\"Server shutdown requested\"); finally: self.cleanup(); def cleanup(self): logger.info(\"Cleaning up resources\"); self.stop_emulator(); emulator = SpectrumEmulator(); def signal_handler(signum, frame): logger.info(f\"Received signal {signum}\"); emulator.cleanup(); exit(0); signal.signal(signal.SIGTERM, signal_handler); signal.signal(signal.SIGINT, signal_handler); asyncio.run(emulator.start_server())'"
+      ]
+    }
+  ]
+}

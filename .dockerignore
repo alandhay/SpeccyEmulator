@@ -1,0 +1,61 @@
+# Ignore virtual environment
+venv/
+.venv/
+
+# Ignore git files
+.git/
+.gitignore
+
+# Ignore build artifacts
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+
+# Ignore logs
+logs/
+*.log
+
+# Ignore test files
+tests/
+*.test
+
+# Ignore documentation
+docs/
+README.md
+
+# Ignore AWS infrastructure files
+aws/
+infrastructure/
+
+# Ignore task definition files
+task-def*.json
+
+# Ignore stream output
+stream/
+
+# Ignore HTML test files
+*.html
+
+# Ignore shell scripts except the ones we need
+*.sh
+!scripts/start-emulator.sh
+
+# Ignore temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db

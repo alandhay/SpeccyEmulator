@@ -1,0 +1,31 @@
+{
+  "serviceName": "spectrum-emulator-streaming-service",
+  "cluster": "spectrum-emulator-cluster-dev",
+  "taskDefinition": "spectrum-emulator-streaming:1",
+  "desiredCount": 1,
+  "launchType": "FARGATE",
+  "networkConfiguration": {
+    "awsvpcConfiguration": {
+      "subnets": [
+        "subnet-0bd7caff8005d9738",
+        "subnet-09c02bea9d057d4ac"
+      ],
+      "securityGroups": [
+        "sg-020bca5cd646c98f4"
+      ],
+      "assignPublicIp": "ENABLED"
+    }
+  },
+  "loadBalancers": [
+    {
+      "targetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:043309319786:targetgroup/spectrum-api-tg-dev/32a3d0e353dfb268",
+      "containerName": "spectrum-emulator-streamer",
+      "containerPort": 8080
+    },
+    {
+      "targetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:043309319786:targetgroup/spectrum-ws-tg-dev/95256efc7a03289c",
+      "containerName": "spectrum-emulator-streamer",
+      "containerPort": 8765
+    }
+  ]
+}

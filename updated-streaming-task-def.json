@@ -1,0 +1,62 @@
+{
+  "family": "spectrum-emulator-streaming",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "2048",
+  "memory": "4096",
+  "executionRoleArn": "arn:aws:iam::043309319786:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "spectrum-emulator-streamer",
+      "image": "ubuntu:22.04",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "protocol": "tcp"
+        },
+        {
+          "containerPort": 8765,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "DISPLAY",
+          "value": ":99"
+        },
+        {
+          "name": "YOUTUBE_RTMP_KEY",
+          "value": "0ebh-efdh-9qtq-2eq3-e6hz"
+        },
+        {
+          "name": "TWITCH_RTMP_KEY",
+          "value": "DISABLED"
+        }
+      ],
+      "command": [
+        "bash",
+        "-c",
+        "#!/bin/bash\nset -e\n\n# Update and install dependencies\napt-get update\napt-get install -y \\\n  python3 python3-pip curl \\\n  xvfb pulseaudio \\\n  ffmpeg \\\n  fuse-emulator-sdl \\\n  wget unzip\n\n# Install Python dependencies\npip3 install websockets aiohttp\n\n# Create directories\nmkdir -p /tmp/games /tmp/logs\n\n# Download a test game (Manic Miner)\nwget -O /tmp/games/manic_miner.tzx 'https://archive.org/download/World_of_Spectrum_June_2017_Mirror/World%20of%20Spectrum%20June%202017%20Mirror.zip/World%20of%20Spectrum%20June%202017%20Mirror%2Fgames%2Fm%2FManicMiner.tzx' || echo 'Game download failed, will use built-in ROM'\n\n# Start virtual display\nXvfb :99 -screen 0 512x384x24 &\nexport DISPLAY=:99\n\n# Start PulseAudio\npulseaudio --start --exit-idle-time=-1\n\n# Create streaming script\ncat > /tmp/start_streaming.sh << 'STREAM_EOF'\n#!/bin/bash\n\n# Function to start FUSE emulator\nstart_emulator() {\n    echo \"Starting ZX Spectrum emulator...\"\n    # Start FUSE in SDL mode with specific window size\n    fuse --machine 48 --graphics-filter 2x --full-screen &\n    FUSE_PID=$!\n    echo \"FUSE started with PID: $FUSE_PID\"\n    sleep 3\n}\n\n# Function to start FFmpeg streaming\nstart_ffmpeg_stream() {\n    local platform=$1\n    local rtmp_key=$2\n    \n    if [ \"$platform\" = \"youtube\" ]; then\n        RTMP_URL=\"rtmp://a.rtmp.youtube.com/live2/$rtmp_key\"\n    elif [ \"$platform\" = \"twitch\" ]; then\n        RTMP_URL=\"rtmp://live.twitch.tv/live/$rtmp_key\"\n    else\n        echo \"Unknown platform: $platform\"\n        return 1\n    fi\n    \n    echo \"Starting FFmpeg stream to $platform...\"\n    echo \"RTMP URL: $RTMP_URL\"\n    ffmpeg -f x11grab -video_size 512x384 -framerate 25 -i :99 \\\n           -f pulse -i default \\\n           -c:v libx264 -preset fast -tune zerolatency \\\n           -b:v 2500k -maxrate 2500k -bufsize 5000k \\\n           -pix_fmt yuv420p -g 50 -keyint_min 25 \\\n           -c:a aac -b:a 128k -ar 44100 -ac 2 \\\n           -f flv \"$RTMP_URL\" &\n    FFMPEG_PID=$!\n    echo \"FFmpeg started with PID: $FFMPEG_PID for $platform\"\n}\n\n# Start emulator\nstart_emulator\n\n# Start YouTube streaming\nif [ ! -z \"$YOUTUBE_RTMP_KEY\" ] && [ \"$YOUTUBE_RTMP_KEY\" != \"YOUR_YOUTUBE_STREAM_KEY\" ] && [ \"$YOUTUBE_RTMP_KEY\" != \"DISABLED\" ]; then\n    echo \"Starting YouTube stream with key: ${YOUTUBE_RTMP_KEY:0:10}...\"\n    start_ffmpeg_stream \"youtube\" \"$YOUTUBE_RTMP_KEY\"\nelse\n    echo \"YouTube streaming disabled or no key provided\"\nfi\n\n# Keep script running\necho \"Streaming setup complete. Emulator and streams are running.\"\nwhile true; do\n    sleep 30\n    # Check if processes are still running\n    if ! kill -0 $FUSE_PID 2>/dev/null; then\n        echo \"FUSE emulator stopped, restarting...\"\n        start_emulator\n    fi\ndone\nSTREAM_EOF\n\nchmod +x /tmp/start_streaming.sh\n\n# Create WebSocket server for remote control\ncat > /tmp/emulator_server.py << 'EOF'\nimport asyncio\nimport websockets\nimport json\nimport logging\nimport subprocess\nimport os\nfrom aiohttp import web\n\nlogging.basicConfig(level=logging.INFO)\nlogger = logging.getLogger(__name__)\n\nclass EmulatorServer:\n    def __init__(self):\n        self.clients = set()\n        self.emulator_process = None\n        self.streaming_process = None\n    \n    async def health(self, request):\n        return web.Response(text='Emulator Streaming Server OK - YouTube Ready')\n    \n    async def status(self, request):\n        status = {\n            'emulator_running': self.streaming_process is not None,\n            'streaming_active': self.streaming_process is not None,\n            'display': os.environ.get('DISPLAY', 'Not set'),\n            'youtube_key': os.environ.get('YOUTUBE_RTMP_KEY', 'Not set')[:10] + '...' if os.environ.get('YOUTUBE_RTMP_KEY') else 'Not set'\n        }\n        return web.json_response(status)\n    \n    async def websocket_handler(self, websocket):\n        logger.info('Client connected for emulator control')\n        self.clients.add(websocket)\n        try:\n            await websocket.send(json.dumps({\n                'type': 'connected',\n                'message': 'ZX Spectrum Emulator Streaming Server',\n                'streaming_to': 'YouTube Live',\n                'youtube_configured': os.environ.get('YOUTUBE_RTMP_KEY', '') != 'YOUR_YOUTUBE_STREAM_KEY'\n            }))\n            \n            async for message in websocket:\n                try:\n                    data = json.loads(message)\n                    await self.handle_message(websocket, data)\n                except json.JSONDecodeError:\n                    await websocket.send(json.dumps({\n                        'type': 'error',\n                        'message': 'Invalid JSON message'\n                    }))\n        except Exception as e:\n            logger.error(f'WebSocket error: {e}')\n        finally:\n            self.clients.discard(websocket)\n    \n    async def handle_message(self, websocket, data):\n        msg_type = data.get('type')\n        \n        if msg_type == 'start_streaming':\n            # Start the streaming process\n            if not self.streaming_process:\n                logger.info('Starting YouTube streaming process...')\n                self.streaming_process = subprocess.Popen(['/tmp/start_streaming.sh'])\n                await websocket.send(json.dumps({\n                    'type': 'streaming_started',\n                    'message': 'ZX Spectrum emulator started - now streaming to YouTube!'\n                }))\n            else:\n                await websocket.send(json.dumps({\n                    'type': 'already_streaming',\n                    'message': 'Streaming already active'\n                }))\n        \n        elif msg_type == 'stop_streaming':\n            if self.streaming_process:\n                self.streaming_process.terminate()\n                self.streaming_process = None\n                await websocket.send(json.dumps({\n                    'type': 'streaming_stopped',\n                    'message': 'YouTube streaming stopped'\n                }))\n        \n        elif msg_type == 'status':\n            await websocket.send(json.dumps({\n                'type': 'status_response',\n                'emulator_running': self.streaming_process is not None,\n                'streaming_to': 'YouTube Live',\n                'message': 'Status updated'\n            }))\n        \n        else:\n            await websocket.send(json.dumps({\n                'type': 'unknown_command',\n                'message': f'Unknown command: {msg_type}'\n            }))\n    \n    async def start(self):\n        # Start HTTP server\n        app = web.Application()\n        app.router.add_get('/health', self.health)\n        app.router.add_get('/status', self.status)\n        runner = web.AppRunner(app)\n        await runner.setup()\n        site = web.TCPSite(runner, '0.0.0.0', 8080)\n        await site.start()\n        logger.info('HTTP server started on port 8080')\n        \n        # Start WebSocket server\n        server = await websockets.serve(self.websocket_handler, '0.0.0.0', 8765)\n        logger.info('WebSocket server started on port 8765 - Ready for YouTube streaming!')\n        await server.wait_closed()\n\nif __name__ == '__main__':\n    server = EmulatorServer()\n    asyncio.run(server.start())\nEOF\n\n# Start the server\necho \"Starting Emulator Streaming Server for YouTube...\"\npython3 /tmp/emulator_server.py\n"
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/spectrum-emulator-streaming",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "curl -f http://localhost:8080/health || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 120
+      }
+    }
+  ]
+}

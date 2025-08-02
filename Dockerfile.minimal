@@ -1,0 +1,91 @@
+# Minimal ZX Spectrum Emulator Docker Image
+FROM ubuntu:22.04
+
+# Prevent interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Set environment variables
+ENV DISPLAY=:99
+ENV STREAM_BUCKET=spectrum-emulator-stream-dev-043309319786
+
+# Install only essential packages in a single layer
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    xvfb \
+    ffmpeg \
+    fuse-emulator-sdl \
+    python3 \
+    python3-pip \
+    pulseaudio \
+    awscli \
+    && pip3 install --no-cache-dir websockets boto3 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Create app directory
+WORKDIR /app
+
+# Create the startup script directly in the image
+RUN cat > /app/start.sh << 'EOF' && chmod +x /app/start.sh
+#!/bin/bash
+set -e
+echo "Starting improved ZX Spectrum Emulator..."
+
+# Start X11 with larger display for centered capture
+Xvfb :99 -screen 0 512x384x24 -ac &
+sleep 2
+
+# Start PulseAudio
+pulseaudio --start &
+
+# Create HLS directory
+mkdir -p /tmp/hls
+
+# Start FFmpeg with centered capture (512x384 display, capture 256x192 at offset +128,96)
+ffmpeg -f x11grab -video_size 256x192 -framerate 25 -i :99.0+128,96 \
+       -f pulse -i default \
+       -c:v libx264 -preset ultrafast -tune zerolatency \
+       -c:a aac -b:a 128k \
+       -f hls -hls_time 2 -hls_list_size 5 -hls_flags delete_segments \
+       /tmp/hls/stream.m3u8 &
+
+# Simple WebSocket server
+python3 -c "
+import asyncio
+import websockets
+import json
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+async def handle_websocket(websocket, path):
+    logger.info('WebSocket connected')
+    try:
+        await websocket.send(json.dumps({'type': 'connected', 'emulator_running': False}))
+        async for message in websocket:
+            data = json.loads(message)
+            await websocket.send(json.dumps({'type': 'response', 'message': 'received'}))
+    except Exception as e:
+        logger.error(f'WebSocket error: {e}')
+
+async def main():
+    logger.info('Starting WebSocket server on port 8765...')
+    await websockets.serve(handle_websocket, '0.0.0.0', 8765)
+    logger.info('WebSocket server started with improved video capture')
+    await asyncio.Future()  # run forever
+
+asyncio.run(main())
+" &
+
+# Simple HTTP server for health checks
+python3 -m http.server 8080 &
+
+# Wait for all processes
+wait
+EOF
+
+# Expose ports
+EXPOSE 8080 8765
+
+# Start the application
+CMD ["/app/start.sh"]

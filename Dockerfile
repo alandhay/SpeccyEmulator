@@ -1,97 +1,55 @@
-# ZX Spectrum Emulator Docker Image
 FROM ubuntu:22.04
 
-# Avoid interactive prompts during package installation
+# Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
+ENV DISPLAY=:99
 
-# Install system dependencies
+# Install all required packages in one layer
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
-    python3-venv \
-    fuse-emulator-sdl \
-    fuse-emulator-common \
-    ffmpeg \
-    imagemagick \
-    x11-utils \
-    xvfb \
     curl \
-    wget \
-    lsof \
+    xvfb \
+    fuse-emulator-sdl \
+    ffmpeg \
+    pulseaudio \
+    x11-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Create app directory
-WORKDIR /app
+# Install Python packages
+RUN pip3 install websockets aiohttp
 
-# Copy requirements first for better caching
-COPY server/requirements.txt ./server/
-COPY requirements-docker.txt ./
+# Create stream directory
+RUN mkdir -p /tmp/stream
 
-# Create virtual environment and install Python dependencies
-RUN python3 -m venv venv && \
-    . venv/bin/activate && \
-    pip install --upgrade pip && \
-    pip install -r server/requirements.txt && \
-    pip install -r requirements-docker.txt
-
-# Copy application code
-COPY server/ ./server/
-COPY games/ ./games/
-COPY scripts/ ./scripts/
-
-# Create necessary directories
-RUN mkdir -p logs stream/hls
-
-# Set up X11 virtual display
-ENV DISPLAY=:99
+# Copy the application code
+COPY server/emulator_server.py /app/emulator_server.py
 
 # Create startup script
-RUN cat > start-services.sh << 'EOF'
-#!/bin/bash
-set -e
+RUN echo '#!/bin/bash\n\
+set -e\n\
+echo "Starting ZX Spectrum Emulator with centered video capture..."\n\
+\n\
+# Start virtual display\n\
+Xvfb :99 -screen 0 512x384x24 &\n\
+sleep 3\n\
+\n\
+# Start PulseAudio\n\
+pulseaudio --start --exit-idle-time=-1 &\n\
+\n\
+# Start the Python server\n\
+cd /app\n\
+python3 emulator_server.py\n\
+' > /app/start.sh && chmod +x /app/start.sh
 
-# Start virtual display
-Xvfb :99 -screen 0 1024x768x24 &
-XVFB_PID=$!
-echo "Started Xvfb (PID: $XVFB_PID)"
-
-# Wait for X11 to be ready
-sleep 2
-
-# Activate virtual environment
-source venv/bin/activate
-
-# Start the emulator server
-echo "Starting emulator server..."
-python3 server/emulator_server.py &
-SERVER_PID=$!
-echo "Started emulator server (PID: $SERVER_PID)"
-
-# Function to cleanup on exit
-cleanup() {
-    echo "Shutting down services..."
-    kill $SERVER_PID 2>/dev/null || true
-    kill $XVFB_PID 2>/dev/null || true
-    pkill -f "fuse" 2>/dev/null || true
-    pkill -f "ffmpeg.*x11grab" 2>/dev/null || true
-    exit 0
-}
-
-# Set up signal handlers
-trap cleanup SIGINT SIGTERM
-
-# Wait for services
-wait $SERVER_PID
-EOF
-
-RUN chmod +x start-services.sh
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8765/health || exit 1
+WORKDIR /app
 
 # Expose ports
-EXPOSE 8765 8080
+EXPOSE 8080 8765
 
-# Start services
-CMD ["./start-services.sh"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Start the application
+CMD ["/app/start.sh"]

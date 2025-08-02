@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZX Spectrum Emulator - RTMP Test</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #00ff00;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .status {
+            background: #111;
+            padding: 10px;
+            border: 1px solid #333;
+            margin-bottom: 20px;
+        }
+        .controls {
+            background: #111;
+            padding: 20px;
+            border: 1px solid #333;
+            margin-bottom: 20px;
+        }
+        .video-container {
+            background: #111;
+            padding: 20px;
+            border: 1px solid #333;
+            text-align: center;
+        }
+        button {
+            background: #333;
+            color: #00ff00;
+            border: 1px solid #555;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+        button:hover {
+            background: #555;
+        }
+        button:disabled {
+            background: #222;
+            color: #666;
+            cursor: not-allowed;
+        }
+        input[type="text"] {
+            background: #222;
+            color: #00ff00;
+            border: 1px solid #555;
+            padding: 8px;
+            font-family: 'Courier New', monospace;
+            width: 300px;
+        }
+        video {
+            max-width: 100%;
+            border: 2px solid #333;
+        }
+        .log {
+            background: #000;
+            color: #00ff00;
+            padding: 10px;
+            border: 1px solid #333;
+            height: 200px;
+            overflow-y: scroll;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 ZX Spectrum Emulator - RTMP Streaming Test</h1>
+        
+        <div class="status">
+            <h3>Connection Status</h3>
+            <div id="status">Disconnected</div>
+            <div id="emulator-status">Emulator: Not running</div>
+            <div id="streaming-status">RTMP Streaming: Inactive</div>
+        </div>
+
+        <div class="controls">
+            <h3>Emulator Controls</h3>
+            <button id="connect-btn">Connect WebSocket</button>
+            <button id="start-emulator-btn" disabled>Start Emulator</button>
+            <button id="stop-emulator-btn" disabled>Stop Emulator</button>
+            <button id="status-btn" disabled>Get Status</button>
+            
+            <h3>RTMP Streaming Controls</h3>
+            <div>
+                <label>YouTube Stream Key:</label><br>
+                <input type="text" id="youtube-key" placeholder="Enter YouTube stream key (optional)">
+            </div>
+            <div>
+                <label>Twitch Stream Key:</label><br>
+                <input type="text" id="twitch-key" placeholder="Enter Twitch stream key (optional)">
+            </div>
+            <button id="start-streaming-btn" disabled>Start RTMP Streaming</button>
+            <button id="stop-streaming-btn" disabled>Stop RTMP Streaming</button>
+        </div>
+
+        <div class="video-container">
+            <h3>Video Stream (Direct from Container)</h3>
+            <video id="video" controls muted autoplay>
+                <source src="http://54.164.181.209:8080/stream/stream.m3u8" type="application/x-mpegURL">
+                Your browser does not support HLS video.
+            </video>
+            <br>
+            <small>Stream URL: http://54.164.181.209:8080/stream/stream.m3u8</small>
+        </div>
+
+        <div class="controls">
+            <h3>Debug Log</h3>
+            <div id="log" class="log"></div>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script>
+        let ws = null;
+        let hls = null;
+        
+        const log = (message) => {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.textContent += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        };
+        
+        const clearLog = () => {
+            document.getElementById('log').textContent = '';
+        };
+        
+        const updateStatus = (status) => {
+            document.getElementById('status').textContent = status;
+        };
+        
+        const updateEmulatorStatus = (running) => {
+            document.getElementById('emulator-status').textContent = `Emulator: ${running ? 'Running' : 'Not running'}`;
+        };
+        
+        const updateStreamingStatus = (streaming) => {
+            document.getElementById('streaming-status').textContent = `RTMP Streaming: ${streaming ? 'Active' : 'Inactive'}`;
+        };
+        
+        const connectWebSocket = () => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                log('WebSocket already connected');
+                return;
+            }
+            
+            log('Connecting to WebSocket...');
+            ws = new WebSocket('ws://54.164.181.209:8765');
+            
+            ws.onopen = () => {
+                log('WebSocket connected successfully');
+                updateStatus('Connected');
+                document.getElementById('connect-btn').disabled = true;
+                document.getElementById('start-emulator-btn').disabled = false;
+                document.getElementById('stop-emulator-btn').disabled = false;
+                document.getElementById('status-btn').disabled = false;
+                document.getElementById('start-streaming-btn').disabled = false;
+                document.getElementById('stop-streaming-btn').disabled = false;
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    log(`Received: ${JSON.stringify(data)}`);
+                    
+                    if (data.type === 'connected') {
+                        updateEmulatorStatus(data.emulator_running);
+                        updateStreamingStatus(data.streaming_to_platforms);
+                    } else if (data.type === 'emulator_status') {
+                        updateEmulatorStatus(data.running);
+                    } else if (data.type === 'streaming_status') {
+                        updateStreamingStatus(data.streaming);
+                    } else if (data.type === 'status_response') {
+                        updateEmulatorStatus(data.emulator_running);
+                        updateStreamingStatus(data.rtmp_streaming);
+                        log(`Connected clients: ${data.connected_clients}`);
+                        log(`Web stream active: ${data.web_stream_active}`);
+                    }
+                } catch (e) {
+                    log(`Received non-JSON message: ${event.data}`);
+                }
+            };
+            
+            ws.onclose = () => {
+                log('WebSocket disconnected');
+                updateStatus('Disconnected');
+                document.getElementById('connect-btn').disabled = false;
+                document.getElementById('start-emulator-btn').disabled = true;
+                document.getElementById('stop-emulator-btn').disabled = true;
+                document.getElementById('status-btn').disabled = true;
+                document.getElementById('start-streaming-btn').disabled = true;
+                document.getElementById('stop-streaming-btn').disabled = true;
+            };
+            
+            ws.onerror = (error) => {
+                log(`WebSocket error: ${error}`);
+                updateStatus('Error');
+            };
+        };
+        
+        const sendMessage = (message) => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(message));
+                log(`Sent: ${JSON.stringify(message)}`);
+            } else {
+                log('WebSocket not connected');
+            }
+        };
+        
+        // Initialize HLS video player
+        const initVideo = () => {
+            const video = document.getElementById('video');
+            const videoSrc = 'http://54.164.181.209:8080/stream/stream.m3u8';
+            
+            if (Hls.isSupported()) {
+                hls = new Hls({
+                    debug: true,
+                    enableWorker: false,
+                    lowLatencyMode: true,
+                    backBufferLength: 90
+                });
+                hls.loadSource(videoSrc);
+                hls.attachMedia(video);
+                
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    log('HLS manifest loaded, starting playback');
+                    video.play().catch(e => log(`Video play error: ${e.message}`));
+                });
+                
+                hls.on(Hls.Events.ERROR, (event, data) => {
+                    log(`HLS error: ${data.type} - ${data.details}`);
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = videoSrc;
+                video.addEventListener('loadedmetadata', () => {
+                    log('Native HLS support detected');
+                    video.play().catch(e => log(`Video play error: ${e.message}`));
+                });
+            } else {
+                log('HLS not supported in this browser');
+            }
+        };
+        
+        // Event listeners
+        document.getElementById('connect-btn').onclick = connectWebSocket;
+        document.getElementById('start-emulator-btn').onclick = () => sendMessage({type: 'start_emulator'});
+        document.getElementById('stop-emulator-btn').onclick = () => sendMessage({type: 'stop_emulator'});
+        document.getElementById('status-btn').onclick = () => sendMessage({type: 'status'});
+        
+        document.getElementById('start-streaming-btn').onclick = () => {
+            const youtubeKey = document.getElementById('youtube-key').value.trim();
+            const twitchKey = document.getElementById('twitch-key').value.trim();
+            
+            if (!youtubeKey && !twitchKey) {
+                alert('Please enter at least one streaming key (YouTube or Twitch)');
+                return;
+            }
+            
+            const message = {type: 'start_streaming'};
+            if (youtubeKey) message.youtube_key = youtubeKey;
+            if (twitchKey) message.twitch_key = twitchKey;
+            
+            sendMessage(message);
+        };
+        
+        document.getElementById('stop-streaming-btn').onclick = () => sendMessage({type: 'stop_streaming'});
+        
+        // Initialize on page load
+        window.onload = () => {
+            log('Page loaded - RTMP streaming test ready');
+            initVideo();
+        };
+    </script>
+</body>
+</html>
