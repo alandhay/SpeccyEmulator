@@ -1,125 +1,300 @@
-# ZX Spectrum Emulator - Quick Reference
+# ZX Spectrum Emulator - Quick Reference Guide
 
-## 🚀 **Live URLs**
-- **Web Interface**: https://d112s3ps8xh739.cloudfront.net
-- **YouTube Control**: https://d112s3ps8xh739.cloudfront.net/youtube-stream-control.html
-- **WebSocket**: `wss://d112s3ps8xh739.cloudfront.net/ws/`
+## 🚀 **Quick Start**
 
-## 🔧 **Current Services**
-
-### Active YouTube Streaming Service
 ```bash
-Service Name: spectrum-youtube-streaming
-Cluster: spectrum-emulator-cluster-dev
-Task Definition: spectrum-emulator-streaming:3
-Status: ACTIVE (1/1 running)
+# 1. Clone and setup
+git clone <your-repo-url>
+cd SpeccyEmulator
+cp .env.template .env
+# Edit .env with your AWS account details
+
+# 2. Deploy everything
+./scripts/complete-setup.sh
+
+# 3. Access your emulator
+# Web interface will be displayed at the end of setup
 ```
 
-### Inactive Legacy Service
-```bash
-Service Name: spectrum-emulator-service-dev
-Cluster: spectrum-emulator-cluster-dev
-Task Definition: spectrum-emulator-dev:16
-Status: ACTIVE (0/1 running) - Scaled down
-```
-
-## 📊 **Monitoring Commands**
+## 🔧 **Common Operations**
 
 ### Check Service Status
 ```bash
-# YouTube streaming service
-aws ecs describe-services --cluster spectrum-emulator-cluster-dev --services spectrum-youtube-streaming --region us-east-1
+# ECS service status
+aws ecs describe-services \
+    --cluster spectrum-emulator-cluster-dev \
+    --services spectrum-youtube-streaming
 
-# Legacy service (should show 0 running)
-aws ecs describe-services --cluster spectrum-emulator-cluster-dev --services spectrum-emulator-service-dev --region us-east-1
+# Container health
+aws elbv2 describe-target-health \
+    --target-group-arn $(aws elbv2 describe-target-groups \
+        --names spectrum-api-tg-dev \
+        --query 'TargetGroups[0].TargetGroupArn' --output text)
 ```
 
 ### View Logs
 ```bash
-# Streaming service logs
-aws logs tail "/ecs/spectrum-emulator-streaming" --follow --region us-east-1
+# Real-time container logs
+aws logs tail "/ecs/spectrum-emulator-streaming" --follow
 
-# Legacy service logs (if needed)
-aws logs tail "/ecs/spectrum-emulator-dev" --follow --region us-east-1
+# Search for errors
+aws logs filter-log-events \
+    --log-group-name "/ecs/spectrum-emulator-streaming" \
+    --filter-pattern "ERROR"
+
+# Search for specific patterns
+aws logs filter-log-events \
+    --log-group-name "/ecs/spectrum-emulator-streaming" \
+    --filter-pattern "FUSE emulator"
 ```
 
-### Test Endpoints
+### Update Docker Image
 ```bash
-# Test WebSocket
+# Build new image
+docker build -f complete-emulator.dockerfile -t spectrum-emulator:new-version .
+
+# Tag and push to ECR
+docker tag spectrum-emulator:new-version \
+    ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/spectrum-emulator:new-version
+
+docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/spectrum-emulator:new-version
+
+# Update task definition (edit image URI in task definition file)
+aws ecs register-task-definition \
+    --cli-input-json file://aws/task-definition-complete-fix.json
+
+# Update service with new task definition
+aws ecs update-service \
+    --cluster spectrum-emulator-cluster-dev \
+    --service spectrum-youtube-streaming \
+    --task-definition spectrum-emulator-streaming:NEW_REVISION
+```
+
+### Scale Service
+```bash
+# Scale up
+aws ecs update-service \
+    --cluster spectrum-emulator-cluster-dev \
+    --service spectrum-youtube-streaming \
+    --desired-count 2
+
+# Scale down
+aws ecs update-service \
+    --cluster spectrum-emulator-cluster-dev \
+    --service spectrum-youtube-streaming \
+    --desired-count 0
+```
+
+### Update Web Content
+```bash
+# Upload new web files
+aws s3 sync web/ s3://spectrum-emulator-web-dev-${AWS_ACCOUNT_ID}/ \
+    --delete \
+    --cache-control "max-age=86400"
+
+# Invalidate CloudFront cache
+DISTRIBUTION_ID=$(aws cloudfront list-distributions \
+    --query 'DistributionList.Items[?Comment==`ZX Spectrum Emulator Distribution`].Id' \
+    --output text)
+
+aws cloudfront create-invalidation \
+    --distribution-id $DISTRIBUTION_ID \
+    --paths "/*"
+```
+
+## 🐛 **Troubleshooting**
+
+### Container Won't Start
+```bash
+# Check ECS service events
+aws ecs describe-services \
+    --cluster spectrum-emulator-cluster-dev \
+    --services spectrum-youtube-streaming \
+    --query 'services[0].events'
+
+# Check task definition
+aws ecs describe-task-definition \
+    --task-definition spectrum-emulator-streaming
+
+# Check container logs for startup errors
+aws logs tail "/ecs/spectrum-emulator-streaming" --follow
+```
+
+### WebSocket Connection Issues
+```bash
+# Test WebSocket endpoint
 curl -v --no-buffer \
-  --header "Connection: Upgrade" \
-  --header "Upgrade: websocket" \
-  --header "Sec-WebSocket-Key: x3JJHMbDL1EzLkh9GBhXDw==" \
-  --header "Sec-WebSocket-Version: 13" \
-  https://d112s3ps8xh739.cloudfront.net/ws/
+    --header "Connection: Upgrade" \
+    --header "Upgrade: websocket" \
+    --header "Sec-WebSocket-Key: x3JJHMbDL1EzLkh9GBhXDw==" \
+    --header "Sec-WebSocket-Version: 13" \
+    https://YOUR_CLOUDFRONT_DOMAIN/ws/
 
-# Test video stream
-curl -s "https://spectrum-emulator-stream-dev-043309319786.s3.us-east-1.amazonaws.com/hls/stream.m3u8"
-
-# Test web interface
-curl -I https://d112s3ps8xh739.cloudfront.net
+# Check ALB target group health
+aws elbv2 describe-target-health \
+    --target-group-arn $(aws elbv2 describe-target-groups \
+        --names spectrum-ws-tg-dev \
+        --query 'TargetGroups[0].TargetGroupArn' --output text)
 ```
 
-## 🎥 **YouTube Streaming**
-
-### Configuration
-- **Stream Key**: `0ebh-efdh-9qtq-2eq3-e6hz`
-- **RTMP URL**: `rtmp://a.rtmp.youtube.com/live2`
-- **Status**: ✅ **LIVE**
-
-### Control Interface
-Access the YouTube streaming controls at:
-https://d112s3ps8xh739.cloudfront.net/youtube-stream-control.html
-
-## 🔄 **Service Management**
-
-### Scale YouTube Service
+### Video Stream Not Working
 ```bash
-# Scale up (normal operation)
-aws ecs update-service --cluster spectrum-emulator-cluster-dev \
-  --service spectrum-youtube-streaming --desired-count 1
+# Check HLS manifest
+curl -s https://YOUR_CLOUDFRONT_DOMAIN/hls/stream.m3u8
 
-# Scale down (maintenance)
-aws ecs update-service --cluster spectrum-emulator-cluster-dev \
-  --service spectrum-youtube-streaming --desired-count 0
+# Check S3 bucket contents
+aws s3 ls s3://spectrum-emulator-stream-dev-${AWS_ACCOUNT_ID}/hls/
+
+# Check FFmpeg process in logs
+aws logs filter-log-events \
+    --log-group-name "/ecs/spectrum-emulator-streaming" \
+    --filter-pattern "ffmpeg"
 ```
 
-### Emergency Rollback
+### Button Presses Not Working
 ```bash
-# If YouTube service fails, rollback to legacy service
-aws ecs update-service --cluster spectrum-emulator-cluster-dev \
-  --service spectrum-youtube-streaming --desired-count 0
+# Check for FUSE emulator startup
+aws logs filter-log-events \
+    --log-group-name "/ecs/spectrum-emulator-streaming" \
+    --filter-pattern "FUSE emulator"
 
-aws ecs update-service --cluster spectrum-emulator-cluster-dev \
-  --service spectrum-emulator-service-dev --desired-count 1
+# Check for X11 display issues
+aws logs filter-log-events \
+    --log-group-name "/ecs/spectrum-emulator-streaming" \
+    --filter-pattern "Xvfb"
+
+# Check for SDL graphics context errors
+aws logs filter-log-events \
+    --log-group-name "/ecs/spectrum-emulator-streaming" \
+    --filter-pattern "SDL graphics context"
 ```
 
-## 📁 **S3 Buckets**
-- **Web Content**: `spectrum-emulator-web-dev-043309319786`
-- **Video Stream**: `spectrum-emulator-stream-dev-043309319786`
+## 📊 **Monitoring**
 
-## 🌐 **CloudFront**
-- **Distribution ID**: `d112s3ps8xh739.cloudfront.net`
-- **Behaviors**: 
-  - `/` → S3 web content
-  - `/ws/` → ALB WebSocket
-  - `/api/` → ALB API
+### Key Metrics to Watch
+```bash
+# ECS service metrics
+aws cloudwatch get-metric-statistics \
+    --namespace AWS/ECS \
+    --metric-name CPUUtilization \
+    --dimensions Name=ServiceName,Value=spectrum-youtube-streaming Name=ClusterName,Value=spectrum-emulator-cluster-dev \
+    --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%S) \
+    --end-time $(date -u +%Y-%m-%dT%H:%M:%S) \
+    --period 300 \
+    --statistics Average
 
-## 🏗️ **Infrastructure**
-- **Region**: us-east-1
-- **ECS Cluster**: spectrum-emulator-cluster-dev
-- **Load Balancer**: spectrum-emulator-alb-dev
-- **Target Groups**: 
-  - spectrum-api-tg-dev (port 8080)
-  - spectrum-ws-tg-dev (port 8765)
+# ALB metrics
+aws cloudwatch get-metric-statistics \
+    --namespace AWS/ApplicationELB \
+    --metric-name RequestCount \
+    --dimensions Name=LoadBalancer,Value=app/spectrum-emulator-alb-dev/LOAD_BALANCER_ID \
+    --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%S) \
+    --end-time $(date -u +%Y-%m-%dT%H:%M:%S) \
+    --period 300 \
+    --statistics Sum
+```
 
-## 🎮 **Usage**
-1. Open https://d112s3ps8xh739.cloudfront.net
-2. Wait for video stream to load
-3. Click "Start Emulator" to send WebSocket command
-4. Monitor YouTube stream via control interface
-5. Use on-screen keyboard for input (when implemented)
+### Health Check Endpoints
+```bash
+# Container health
+curl -f https://YOUR_CLOUDFRONT_DOMAIN/health
+
+# Direct ALB health (if accessible)
+curl -f http://YOUR_ALB_DNS/health
+```
+
+## 🧹 **Cleanup**
+
+### Complete Cleanup
+```bash
+# Remove all AWS resources
+./scripts/cleanup.sh
+```
+
+### Partial Cleanup
+```bash
+# Stop service only
+aws ecs update-service \
+    --cluster spectrum-emulator-cluster-dev \
+    --service spectrum-youtube-streaming \
+    --desired-count 0
+
+# Delete service but keep infrastructure
+aws ecs delete-service \
+    --cluster spectrum-emulator-cluster-dev \
+    --service spectrum-youtube-streaming
+```
+
+## 🔐 **Security**
+
+### Update IAM Policies
+```bash
+# View current policy
+aws iam get-role-policy \
+    --role-name ecsTaskExecutionRole \
+    --policy-name SpectrumEmulatorS3Policy
+
+# Update policy (edit aws/s3-access-policy.json first)
+aws iam put-role-policy \
+    --role-name ecsTaskExecutionRole \
+    --policy-name SpectrumEmulatorS3Policy \
+    --policy-document file://aws/s3-access-policy.json
+```
+
+### Rotate YouTube Stream Key
+```bash
+# Update environment variable in task definition
+# Edit aws/task-definition-complete-fix.json
+# Then register new task definition and update service
+```
+
+## 📝 **Configuration Files**
+
+- `.env` - Environment variables and AWS configuration
+- `aws/task-definition-complete-fix.json` - ECS task definition
+- `complete-emulator.dockerfile` - Docker image build instructions
+- `web/js/config.js` - Frontend configuration
+- `fix-emulator-integration.py` - Main server application
+
+## 🆘 **Emergency Procedures**
+
+### Service Down
+```bash
+# Quick restart
+aws ecs update-service \
+    --cluster spectrum-emulator-cluster-dev \
+    --service spectrum-youtube-streaming \
+    --force-new-deployment
+
+# Rollback to previous task definition
+aws ecs update-service \
+    --cluster spectrum-emulator-cluster-dev \
+    --service spectrum-youtube-streaming \
+    --task-definition spectrum-emulator-streaming:PREVIOUS_REVISION
+```
+
+### High CPU/Memory
+```bash
+# Scale up resources (edit task definition)
+# Increase CPU from 1024 to 2048, memory from 2048 to 4096
+# Register new task definition and update service
+```
+
+### Complete System Recovery
+```bash
+# If everything fails, redeploy from scratch
+./scripts/cleanup.sh
+./scripts/complete-setup.sh
+```
 
 ---
-**Last Updated**: August 2, 2025  
-**Status**: ✅ **FULLY OPERATIONAL**
+
+## 📞 **Support**
+
+For issues not covered in this guide:
+1. Check container logs first: `aws logs tail "/ecs/spectrum-emulator-streaming" --follow`
+2. Verify service health: Check ECS service status and target group health
+3. Test individual components: WebSocket, HLS stream, health endpoint
+4. Review recent changes: Check if any configuration was modified
+
+Remember: The emulator is fully interactive with working button presses when properly deployed! 🎮
