@@ -370,7 +370,7 @@
             </div>
             
             <div class="stream-info">
-                <strong>Stream Info:</strong> This shows the live emulator output. When the emulator is running, you'll see the ZX Spectrum display. When stopped, you'll see a test pattern. Use the keyboard below to interact with the emulator in real-time!
+                <strong>🎮 Interactive Controls:</strong> Use your physical keyboard or click the virtual keys below to interact with the ZX Spectrum emulator in real-time! Arrow keys map to QAOP for games. The emulator responds to both key press and release events for authentic feel.
             </div>
             
             <div class="video-wrapper">
@@ -402,6 +402,12 @@
                     <button class="control-button" onclick="takeScreenshot()">
                         📸 Screenshot
                     </button>
+                    <button class="control-button" onclick="resetEmulator()">
+                        🔄 Reset Emulator
+                    </button>
+                    <button class="control-button" onclick="sendCommand('LOAD &quot;&quot;')">
+                        📁 Load Program
+                    </button>
                 </div>
             </div>
 
@@ -409,16 +415,16 @@
                 <h3 class="keyboard-title">⌨️ ZX Spectrum Keyboard</h3>
                 <div class="keyboard">
                     <div class="keyboard-row">
-                        <div class="key" data-key="1">1</div>
-                        <div class="key" data-key="2">2</div>
-                        <div class="key" data-key="3">3</div>
-                        <div class="key" data-key="4">4</div>
-                        <div class="key" data-key="5">5</div>
-                        <div class="key" data-key="6">6</div>
-                        <div class="key" data-key="7">7</div>
-                        <div class="key" data-key="8">8</div>
-                        <div class="key" data-key="9">9</div>
-                        <div class="key" data-key="0">0</div>
+                        <div class="key" data-key="1">1 !</div>
+                        <div class="key" data-key="2">2 @</div>
+                        <div class="key" data-key="3">3 #</div>
+                        <div class="key" data-key="4">4 $</div>
+                        <div class="key" data-key="5">5 %</div>
+                        <div class="key" data-key="6">6 &</div>
+                        <div class="key" data-key="7">7 '</div>
+                        <div class="key" data-key="8">8 (</div>
+                        <div class="key" data-key="9">9 )</div>
+                        <div class="key" data-key="0">0 _</div>
                     </div>
                     <div class="keyboard-row">
                         <div class="key" data-key="Q">Q</div>
@@ -458,6 +464,13 @@
                     <div class="keyboard-row">
                         <div class="key space" data-key="SPACE">SPACE</div>
                     </div>
+                    <div class="keyboard-row" style="margin-top: 10px;">
+                        <div class="key" data-key="DELETE" title="Delete/Backspace">DEL</div>
+                        <div class="key" data-key="Q" title="Cursor Up (Games: Up)">↑</div>
+                        <div class="key" data-key="A" title="Cursor Left (Games: Left)">←</div>
+                        <div class="key" data-key="O" title="Cursor Down (Games: Down)">↓</div>
+                        <div class="key" data-key="P" title="Cursor Right (Games: Right)">→</div>
+                    </div>
                 </div>
             </div>
 
@@ -473,6 +486,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="js/config.js"></script>
     <script src="js/spectrum-emulator.js"></script>
 </body>
 </html>

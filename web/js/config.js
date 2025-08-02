@@ -1,7 +1,8 @@
 // Configuration for ZX Spectrum Emulator
 const CONFIG = {
-    // WebSocket connection - using new RTMP-enabled task
-    WEBSOCKET_URL: 'ws://54.164.181.209:8765',
+    // WebSocket connection - try CloudFront first, fallback to direct ALB
+    WEBSOCKET_URL: 'wss://d112s3ps8xh739.cloudfront.net/ws/',
+    WEBSOCKET_FALLBACK_URL: 'ws://spectrum-emulator-alb-dev-1273339161.us-east-1.elb.amazonaws.com/ws/',
     
     // Video stream - live emulator output from S3
     STREAM_URL: 'https://spectrum-emulator-stream-dev-043309319786.s3.us-east-1.amazonaws.com/hls/stream.m3u8',

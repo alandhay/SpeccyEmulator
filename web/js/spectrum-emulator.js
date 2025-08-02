@@ -79,7 +79,7 @@ class SpectrumEmulator {
     }
 
     connectWebSocket() {
-        const wsUrl = 'wss://d112s3ps8xh739.cloudfront.net/ws/';
+        const wsUrl = CONFIG.WEBSOCKET_URL;
         this.log(`🔌 Connecting to HIGH QUALITY server at ${wsUrl}...`, 'info');
 
         try {
@@ -166,6 +166,21 @@ class SpectrumEmulator {
                 }
                 break;
             
+            case 'key_response':
+                if (data.success) {
+                    this.log(`✅ Key ${data.action}: ${data.key}`, 'success');
+                } else {
+                    this.log(`❌ Key ${data.action} failed: ${data.key} - ${data.error}`, 'error');
+                }
+                break;
+            
+            case 'emulator_output':
+                // Handle any text output from the emulator
+                if (data.text) {
+                    this.log(`🖥️ Emulator: ${data.text}`, 'info');
+                }
+                break;
+            
             case 'error':
                 this.log(`❌ Error: ${data.message}`, 'error');
                 break;
@@ -187,68 +202,172 @@ class SpectrumEmulator {
 
     setupKeyboard() {
         document.querySelectorAll('.key').forEach(key => {
-            key.addEventListener('click', () => {
+            // Mouse down - key press
+            key.addEventListener('mousedown', (e) => {
+                e.preventDefault();
                 const keyValue = key.dataset.key;
-                this.sendKey(keyValue);
+                this.sendKey(keyValue, 'press');
+                this.visualKeyPress(key, true);
+            });
+            
+            // Mouse up - key release
+            key.addEventListener('mouseup', (e) => {
+                e.preventDefault();
+                const keyValue = key.dataset.key;
+                this.sendKey(keyValue, 'release');
+                this.visualKeyPress(key, false);
+            });
+            
+            // Mouse leave - ensure key is released
+            key.addEventListener('mouseleave', (e) => {
+                const keyValue = key.dataset.key;
+                this.sendKey(keyValue, 'release');
+                this.visualKeyPress(key, false);
+            });
+            
+            // Touch support for mobile
+            key.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const keyValue = key.dataset.key;
+                this.sendKey(keyValue, 'press');
+                this.visualKeyPress(key, true);
+            });
+            
+            key.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                const keyValue = key.dataset.key;
+                this.sendKey(keyValue, 'release');
+                this.visualKeyPress(key, false);
             });
         });
     }
+    
+    visualKeyPress(keyElement, pressed) {
+        if (pressed) {
+            keyElement.style.transform = 'translateY(2px)';
+            keyElement.style.background = 'linear-gradient(145deg, #00ff00, #00cc00)';
+            keyElement.style.color = '#000';
+            keyElement.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.3)';
+        } else {
+            keyElement.style.transform = '';
+            keyElement.style.background = '';
+            keyElement.style.color = '';
+            keyElement.style.boxShadow = '';
+        }
+    }
 
     setupPhysicalKeyboard() {
+        // Track pressed keys to avoid repeats
+        this.pressedKeys = new Set();
+        
         document.addEventListener('keydown', (event) => {
             if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
                 return; // Don't intercept when typing in inputs
             }
             
+            // Prevent key repeat
+            if (this.pressedKeys.has(event.code)) {
+                event.preventDefault();
+                return;
+            }
+            
             event.preventDefault();
-            let key = event.key.toUpperCase();
+            this.pressedKeys.add(event.code);
             
-            // Map special keys to ZX Spectrum equivalents
-            const keyMap = {
-                ' ': 'SPACE',
-                'ENTER': 'ENTER',
-                'SHIFT': 'SHIFT',
-                'CONTROL': 'SYMBOL',
-                'ALT': 'SYMBOL',
-                'BACKSPACE': 'DELETE',
-                'DELETE': 'DELETE',
-                'ARROWUP': 'UP',
-                'ARROWDOWN': 'DOWN',
-                'ARROWLEFT': 'LEFT',
-                'ARROWRIGHT': 'RIGHT'
-            };
+            let key = this.mapPhysicalKeyToSpectrum(event);
             
-            key = keyMap[key] || key;
-            
-            // Only send valid ZX Spectrum keys
-            const validKeys = ['1','2','3','4','5','6','7','8','9','0',
-                             'Q','W','E','R','T','Y','U','I','O','P',
-                             'A','S','D','F','G','H','J','K','L',
-                             'Z','X','C','V','B','N','M',
-                             'SPACE','ENTER','SHIFT','SYMBOL','DELETE',
-                             'UP','DOWN','LEFT','RIGHT'];
-            
-            if (validKeys.includes(key)) {
-                this.sendKey(key);
+            if (key) {
+                this.sendKey(key, 'press');
             }
         });
+        
+        document.addEventListener('keyup', (event) => {
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                return;
+            }
+            
+            event.preventDefault();
+            this.pressedKeys.delete(event.code);
+            
+            let key = this.mapPhysicalKeyToSpectrum(event);
+            
+            if (key) {
+                this.sendKey(key, 'release');
+            }
+        });
+        
+        // Clear pressed keys when window loses focus
+        window.addEventListener('blur', () => {
+            this.pressedKeys.clear();
+        });
+    }
+    
+    mapPhysicalKeyToSpectrum(event) {
+        // Map physical keyboard to ZX Spectrum layout
+        const keyMap = {
+            // Numbers
+            'Digit1': '1', 'Digit2': '2', 'Digit3': '3', 'Digit4': '4', 'Digit5': '5',
+            'Digit6': '6', 'Digit7': '7', 'Digit8': '8', 'Digit9': '9', 'Digit0': '0',
+            
+            // Letters (QWERTY layout)
+            'KeyQ': 'Q', 'KeyW': 'W', 'KeyE': 'E', 'KeyR': 'R', 'KeyT': 'T',
+            'KeyY': 'Y', 'KeyU': 'U', 'KeyI': 'I', 'KeyO': 'O', 'KeyP': 'P',
+            'KeyA': 'A', 'KeyS': 'S', 'KeyD': 'D', 'KeyF': 'F', 'KeyG': 'G',
+            'KeyH': 'H', 'KeyJ': 'J', 'KeyK': 'K', 'KeyL': 'L',
+            'KeyZ': 'Z', 'KeyX': 'X', 'KeyC': 'C', 'KeyV': 'V', 'KeyB': 'B',
+            'KeyN': 'N', 'KeyM': 'M',
+            
+            // Special keys
+            'Space': 'SPACE',
+            'Enter': 'ENTER',
+            'ShiftLeft': 'SHIFT',
+            'ShiftRight': 'SHIFT',
+            'ControlLeft': 'SYMBOL',
+            'ControlRight': 'SYMBOL',
+            'AltLeft': 'SYMBOL',
+            'AltRight': 'SYMBOL',
+            'Backspace': 'DELETE',
+            'Delete': 'DELETE',
+            
+            // Arrow keys (mapped to QAOP for games)
+            'ArrowUp': 'Q',
+            'ArrowLeft': 'A',
+            'ArrowDown': 'O',
+            'ArrowRight': 'P',
+            
+            // Alternative cursor keys
+            'KeyI': 'UP',    // When used as cursor
+            'KeyJ': 'LEFT',  // When used as cursor
+            'KeyK': 'DOWN',  // When used as cursor
+            'KeyL': 'RIGHT'  // When used as cursor
+        };
+        
+        return keyMap[event.code] || null;
     }
 
-    sendKey(key) {
-        if (this.sendMessage({ type: 'key_press', key: key })) {
-            this.log(`⌨️ Key pressed: ${key}`, 'info');
+    sendKey(key, action = 'press') {
+        const message = { 
+            type: 'key_input', 
+            key: key, 
+            action: action,
+            timestamp: Date.now()
+        };
+        
+        if (this.sendMessage(message)) {
+            this.log(`⌨️ Key ${action}: ${key}`, 'info');
             
-            // Visual feedback
-            const keyElement = document.querySelector(`[data-key="${key}"]`);
-            if (keyElement) {
-                keyElement.style.transform = 'translateY(2px)';
-                keyElement.style.background = 'linear-gradient(145deg, #00ff00, #00cc00)';
-                keyElement.style.color = '#000';
-                setTimeout(() => {
-                    keyElement.style.transform = '';
-                    keyElement.style.background = '';
-                    keyElement.style.color = '';
-                }, 150);
+            // Visual feedback for physical keyboard
+            if (action === 'press') {
+                const keyElement = document.querySelector(`[data-key="${key}"]`);
+                if (keyElement) {
+                    this.visualKeyPress(keyElement, true);
+                    // Auto-release visual after short delay if no release event
+                    setTimeout(() => {
+                        if (keyElement.style.transform) {
+                            this.visualKeyPress(keyElement, false);
+                        }
+                    }, 150);
+                }
             }
         }
     }
@@ -331,7 +450,27 @@ function requestStatus() {
 }
 
 function takeScreenshot() {
-    emulator.log('📸 Screenshot feature coming soon...', 'info');
+    if (emulator.sendMessage({ type: 'screenshot' })) {
+        emulator.log('📸 Taking screenshot...', 'info');
+    }
+}
+
+function sendCommand(command) {
+    if (emulator.sendMessage({ type: 'command', command: command })) {
+        emulator.log(`💻 Sending command: ${command}`, 'info');
+    }
+}
+
+function loadGame(filename) {
+    if (emulator.sendMessage({ type: 'load_game', filename: filename })) {
+        emulator.log(`🎮 Loading game: ${filename}`, 'info');
+    }
+}
+
+function resetEmulator() {
+    if (emulator.sendMessage({ type: 'reset' })) {
+        emulator.log('🔄 Resetting emulator...', 'info');
+    }
 }
 
 function toggleFullscreen() {

@@ -1,0 +1,88 @@
+{
+    "family": "spectrum-emulator-streaming",
+    "taskRoleArn": "arn:aws:iam::043309319786:role/ecsTaskExecutionRole",
+    "executionRoleArn": "arn:aws:iam::043309319786:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": ["FARGATE"],
+    "cpu": "1024",
+    "memory": "2048",
+    "containerDefinitions": [
+        {
+            "name": "spectrum-emulator-streamer",
+            "image": "043309319786.dkr.ecr.us-east-1.amazonaws.com/spectrum-emulator:segment-fix",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "containerPort": 8080,
+                    "hostPort": 8080,
+                    "protocol": "tcp"
+                },
+                {
+                    "containerPort": 8765,
+                    "hostPort": 8765,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "SDL_VIDEODRIVER",
+                    "value": "x11"
+                },
+                {
+                    "name": "CAPTURE_SIZE",
+                    "value": "256x192"
+                },
+                {
+                    "name": "DISPLAY",
+                    "value": ":99"
+                },
+                {
+                    "name": "STREAM_BUCKET",
+                    "value": "spectrum-emulator-stream-dev-043309319786"
+                },
+                {
+                    "name": "CAPTURE_OFFSET",
+                    "value": "0,0"
+                },
+                {
+                    "name": "PULSE_RUNTIME_PATH",
+                    "value": "/tmp/pulse"
+                },
+                {
+                    "name": "DISPLAY_SIZE",
+                    "value": "512x384"
+                },
+                {
+                    "name": "SDL_AUDIODRIVER",
+                    "value": "pulse"
+                },
+                {
+                    "name": "YOUTUBE_STREAM_KEY",
+                    "value": "0ebh-efdh-9qtq-2eq3-e6hz"
+                }
+            ],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/spectrum-emulator-streaming",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            },
+            "healthCheck": {
+                "command": [
+                    "CMD-SHELL",
+                    "curl -f http://localhost:8080/health || exit 1"
+                ],
+                "interval": 30,
+                "timeout": 10,
+                "retries": 3,
+                "startPeriod": 120
+            },
+            "systemControls": []
+        }
+    ]
+}
