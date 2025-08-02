@@ -104,13 +104,29 @@
             background: #000;
             border-radius: 8px;
             overflow: hidden;
-            aspect-ratio: 16/9;
+            aspect-ratio: 4/3;  /* ZX Spectrum native aspect ratio (512:384) */
+            max-width: 512px;   /* Match server output width */
+            width: 100%;        /* Responsive width */
+            margin: 0 auto;     /* Center the video */
+            border: 2px solid var(--spectrum-gray, #808080);  /* Retro border */
         }
 
         #videoPlayer {
             width: 100%;
             height: 100%;
-            object-fit: contain;
+            object-fit: contain;  /* Maintain aspect ratio */
+            background: #000;
+            image-rendering: pixelated;      /* Pixel-perfect scaling for retro look */
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+
+        /* Responsive design for smaller screens */
+        @media (max-width: 600px) {
+            .video-wrapper {
+                max-width: 100%;
+                margin: 0;
+            }
         }
 
         .video-overlay {
@@ -366,11 +382,11 @@
         <div class="stream-container">
             <div class="stream-header">
                 <div class="stream-title">📡 Live Emulator Stream</div>
-                <div class="quality-badge">HD 1080p @ 6Mbps</div>
+                <div class="quality-badge">ZX Spectrum 512x384 @ 2.5Mbps</div>
             </div>
             
             <div class="stream-info">
-                <strong>🎮 Interactive Controls:</strong> Use your physical keyboard or click the virtual keys below to interact with the ZX Spectrum emulator in real-time! Arrow keys map to QAOP for games. The emulator responds to both key press and release events for authentic feel.
+                <strong>🎮 Interactive Controls:</strong> Use your physical keyboard, click the virtual keys below, or <strong>🖱️ click directly on the video</strong> to interact with the ZX Spectrum emulator in real-time! Arrow keys map to QAOP for games. Left/right mouse clicks are supported. The emulator responds to both key press and release events for authentic feel.
             </div>
             
             <div class="video-wrapper">

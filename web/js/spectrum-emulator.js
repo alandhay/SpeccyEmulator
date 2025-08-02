@@ -15,6 +15,7 @@ class SpectrumEmulator {
         this.connectWebSocket();
         this.setupKeyboard();
         this.setupPhysicalKeyboard();
+        this.setupMouse();
         this.log('🎮 Initializing HIGH QUALITY ZX Spectrum Emulator Interface...', 'info');
         this.log('📺 Connecting to live emulator stream...', 'info');
     }
@@ -202,27 +203,39 @@ class SpectrumEmulator {
 
     setupKeyboard() {
         document.querySelectorAll('.key').forEach(key => {
+            // Track if this key is currently pressed via mouse
+            let mousePressed = false;
+            
             // Mouse down - key press
             key.addEventListener('mousedown', (e) => {
                 e.preventDefault();
-                const keyValue = key.dataset.key;
-                this.sendKey(keyValue, 'press');
-                this.visualKeyPress(key, true);
+                if (!mousePressed) {
+                    mousePressed = true;
+                    const keyValue = key.dataset.key;
+                    this.sendKey(keyValue, 'press');
+                    this.visualKeyPress(key, true);
+                }
             });
             
-            // Mouse up - key release
+            // Mouse up - key release (only if we pressed it)
             key.addEventListener('mouseup', (e) => {
                 e.preventDefault();
-                const keyValue = key.dataset.key;
-                this.sendKey(keyValue, 'release');
-                this.visualKeyPress(key, false);
+                if (mousePressed) {
+                    mousePressed = false;
+                    const keyValue = key.dataset.key;
+                    this.sendKey(keyValue, 'release');
+                    this.visualKeyPress(key, false);
+                }
             });
             
-            // Mouse leave - ensure key is released
+            // Mouse leave - release key only if it was pressed via mouse
             key.addEventListener('mouseleave', (e) => {
-                const keyValue = key.dataset.key;
-                this.sendKey(keyValue, 'release');
-                this.visualKeyPress(key, false);
+                if (mousePressed) {
+                    mousePressed = false;
+                    const keyValue = key.dataset.key;
+                    this.sendKey(keyValue, 'release');
+                    this.visualKeyPress(key, false);
+                }
             });
             
             // Touch support for mobile
@@ -345,6 +358,45 @@ class SpectrumEmulator {
         return keyMap[event.code] || null;
     }
 
+    setupMouse() {
+        const video = document.getElementById('videoPlayer');
+        if (!video) {
+            this.log('⚠️ Video player not found for mouse setup', 'warning');
+            return;
+        }
+
+        // Add mouse click listeners to video player
+        video.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            // Calculate relative coordinates within the video
+            const rect = video.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * 256;  // Scale to ZX Spectrum width
+            const y = ((e.clientY - rect.top) / rect.height) * 192;  // Scale to ZX Spectrum height
+            
+            // Send left click with coordinates
+            this.sendMouseClick('left', x, y);
+        });
+
+        // Right click support
+        video.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            
+            // Calculate relative coordinates within the video
+            const rect = video.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * 256;  // Scale to ZX Spectrum width
+            const y = ((e.clientY - rect.top) / rect.height) * 192;  // Scale to ZX Spectrum height
+            
+            // Send right click with coordinates
+            this.sendMouseClick('right', x, y);
+        });
+
+        // Add visual feedback for mouse interaction
+        video.style.cursor = 'crosshair';
+        
+        this.log('🖱️ Mouse support enabled - click on video to interact with emulator', 'info');
+    }
+
     sendKey(key, action = 'press') {
         const message = { 
             type: 'key_input', 
@@ -369,6 +421,25 @@ class SpectrumEmulator {
                     }, 150);
                 }
             }
+        }
+    }
+
+    sendMouseClick(button, x = null, y = null) {
+        const message = { 
+            type: 'mouse_click', 
+            button: button,
+            timestamp: Date.now()
+        };
+        
+        // Add coordinates if provided
+        if (x !== null && y !== null) {
+            message.x = Math.round(x);
+            message.y = Math.round(y);
+        }
+        
+        if (this.sendMessage(message)) {
+            const coordInfo = (x !== null && y !== null) ? ` at (${Math.round(x)},${Math.round(y)})` : '';
+            this.log(`🖱️ Mouse ${button} click${coordInfo}`, 'info');
         }
     }
 
