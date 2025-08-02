@@ -5,7 +5,9 @@ FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive \
     DISPLAY=:99 \
     STREAM_BUCKET=spectrum-emulator-stream-dev-043309319786 \
-    PULSE_RUNTIME_PATH=/tmp/pulse
+    PULSE_RUNTIME_PATH=/tmp/pulse \
+    SDL_VIDEODRIVER=x11 \
+    SDL_AUDIODRIVER=pulse
 
 # Install all dependencies in a single layer to minimize image size
 RUN apt-get update && apt-get install -y \
@@ -18,11 +20,16 @@ RUN apt-get update && apt-get install -y \
     # FFmpeg and multimedia
     ffmpeg \
     # X11 and display
-    xvfb x11-utils \
+    xvfb x11-utils xauth \
+    # SDL2 libraries (CRITICAL for FUSE)
+    libsdl2-dev libsdl2-2.0-0 \
+    libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
     # Audio
-    pulseaudio pulseaudio-utils \
+    pulseaudio pulseaudio-utils alsa-utils \
     # ZX Spectrum emulator
     fuse-emulator-sdl fuse-emulator-common \
+    # Additional graphics libraries
+    libgl1-mesa-dev libglu1-mesa-dev \
     # AWS CLI
     awscli \
     # Cleanup in same layer to reduce image size
@@ -42,12 +49,12 @@ RUN pip3 install --no-cache-dir \
 
 # Create application directory and user
 RUN useradd -m -s /bin/bash spectrum && \
-    mkdir -p /app/stream/hls /app/logs && \
-    chown -R spectrum:spectrum /app
+    mkdir -p /app/stream/hls /app/logs /tmp/pulse && \
+    chown -R spectrum:spectrum /app /tmp/pulse
 
 # Copy application files
 COPY --chown=spectrum:spectrum server/ /app/server/
-COPY --chown=spectrum:spectrum scripts/start-emulator-container.sh /app/start-emulator.sh
+COPY --chown=spectrum:spectrum scripts/start-emulator-container-fixed.sh /app/start-emulator.sh
 
 # Make scripts executable
 RUN chmod +x /app/start-emulator.sh

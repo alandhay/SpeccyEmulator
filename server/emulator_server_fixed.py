@@ -35,10 +35,6 @@ class SpectrumEmulator:
         self.stream_bucket = os.getenv('STREAM_BUCKET', 'spectrum-emulator-stream-dev-043309319786')
         self.youtube_key = os.getenv('YOUTUBE_STREAM_KEY', '')
         
-        # Enhanced streaming configuration
-        self.output_resolution = '1280x720'  # HD output for better quality
-        self.emulator_native_size = '256x192'  # ZX Spectrum native resolution
-        
         # Initialize S3 client
         try:
             self.s3_client = boto3.client('s3')
@@ -47,7 +43,7 @@ class SpectrumEmulator:
             logger.error(f'Failed to initialize S3 client: {e}')
             self.s3_client = None
         
-        logger.info(f'Emulator config: display={self.display_size}, output={self.output_resolution}')
+        logger.info(f'Emulator config: capture={self.capture_size} offset={self.capture_offset} display={self.display_size}')
 
     def test_sdl_environment(self):
         """Test if SDL2 environment is properly configured"""
@@ -94,7 +90,7 @@ class SpectrumEmulator:
             if not self.test_sdl_environment():
                 logger.error('SDL environment test failed, cannot start emulator')
                 # Start streaming anyway with test pattern
-                self.start_web_stream_with_test_pattern()
+                self.start_web_stream()
                 self.start_youtube_stream()
                 self.start_s3_upload()
                 return False
@@ -110,18 +106,18 @@ class SpectrumEmulator:
                 'XAUTHORITY': '/tmp/.Xauth'
             })
             
-            # Start FUSE with better error handling and proper window size
+            # Start FUSE with better error handling
             self.emulator_process = subprocess.Popen([
                 'fuse-sdl', 
                 '--machine', '48', 
                 '--graphics-filter', 'none', 
                 '--sound', 
-                '--no-confirm-actions',
-                '--full-screen'  # This should make it use the full display
+                '--no-confirm-actions', 
+                '--full-screen'
             ], env=fuse_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             
             # Wait a bit and check if FUSE started successfully
-            time.sleep(5)  # Give FUSE more time to initialize
+            time.sleep(3)
             
             if self.emulator_process.poll() is not None:
                 # Process has already terminated
@@ -139,13 +135,13 @@ class SpectrumEmulator:
                 return False
             else:
                 logger.info('FUSE emulator started successfully')
-                time.sleep(3)  # Give it more time to initialize display
+                time.sleep(2)  # Give it more time to initialize
                 
-                # Start streaming with proper scaling
-                self.start_web_stream_scaled()
+                # Start streaming
+                self.start_web_stream()
                 self.start_youtube_stream()
                 self.start_s3_upload()
-                logger.info('ZX Spectrum emulator started successfully with scaled streaming outputs')
+                logger.info('ZX Spectrum emulator started successfully with all streaming outputs')
                 return True
             
         except Exception as e:
@@ -157,71 +153,28 @@ class SpectrumEmulator:
             self.start_s3_upload()
             return False
 
-    def start_web_stream_scaled(self):
-        """Start streaming with proper scaling from full display"""
-        try:
-            logger.info(f'Starting scaled web HLS stream: {self.display_size} -> {self.output_resolution}')
-            stream_file = self.stream_dir / 'stream.m3u8'
-            
-            # Capture the full virtual display and scale it up with proper filtering
-            self.web_stream_process = subprocess.Popen([
-                'ffmpeg', '-y',
-                '-f', 'x11grab',
-                '-video_size', self.display_size,  # Capture full display (512x384)
-                '-framerate', '25',
-                '-i', ':99.0+0,0',  # Capture from top-left of full display
-                '-f', 'pulse',
-                '-i', 'default',
-                # Video processing with scaling
-                '-vf', f'scale={self.output_resolution}:flags=neighbor',  # Pixel-perfect scaling for retro look
-                '-c:v', 'libx264',
-                '-preset', 'fast',  # Better quality than ultrafast
-                '-tune', 'zerolatency',
-                '-g', '50',
-                '-keyint_min', '25',
-                '-sc_threshold', '0',
-                '-b:v', '2000k',  # Higher bitrate for better quality
-                '-maxrate', '2500k',
-                '-bufsize', '5000k',
-                '-pix_fmt', 'yuv420p',  # Ensure compatibility
-                # Audio
-                '-c:a', 'aac',
-                '-b:a', '128k',
-                '-ar', '44100',
-                # HLS output
-                '-f', 'hls',
-                '-hls_time', '2',
-                '-hls_list_size', '5',
-                '-hls_flags', 'delete_segments',
-                str(stream_file)
-            ])
-            logger.info(f'Scaled web HLS streaming started: {self.display_size} -> {self.output_resolution}')
-            
-        except Exception as e:
-            logger.error(f'Failed to start scaled web stream: {e}')
-
     def start_web_stream_with_test_pattern(self):
         """Start streaming with a test pattern instead of emulator capture"""
         try:
-            logger.info(f'Starting web HLS stream with scaled test pattern: {self.output_resolution}')
+            logger.info('Starting web HLS stream with test pattern')
             stream_file = self.stream_dir / 'stream.m3u8'
             
-            # Create test pattern with ZX Spectrum aspect ratio, scaled to HD
+            # Create test pattern with ZX Spectrum colors and text
             self.web_stream_process = subprocess.Popen([
                 'ffmpeg', '-y',
                 '-f', 'lavfi',
-                '-i', f'testsrc2=size={self.output_resolution}:rate=25:duration=0',
+                '-i', f'testsrc2=size={self.capture_size}:rate=25:duration=0',
                 '-f', 'lavfi', 
                 '-i', 'sine=frequency=1000:duration=0',
                 '-c:v', 'libx264',
-                '-preset', 'fast',
+                '-preset', 'ultrafast',
                 '-tune', 'zerolatency',
                 '-g', '50',
                 '-keyint_min', '25',
                 '-sc_threshold', '0',
-                '-b:v', '2000k',
-                '-maxrate', '2500k',
-                '-bufsize', '5000k',
+                '-b:v', '500k',
+                '-maxrate', '500k',
+                '-bufsize', '1000k',
                 '-c:a', 'aac',
                 '-b:a', '128k',
                 '-ar', '44100',
@@ -231,10 +184,46 @@ class SpectrumEmulator:
                 '-hls_flags', 'delete_segments',
                 str(stream_file)
             ])
-            logger.info(f'Scaled test pattern streaming started at {self.output_resolution}')
+            logger.info(f'Web HLS streaming started with test pattern at {stream_file}')
             
         except Exception as e:
             logger.error(f'Failed to start web stream with test pattern: {e}')
+
+    def start_web_stream(self):
+        try:
+            logger.info(f'Starting web HLS stream with capture size {self.capture_size} at offset +{self.capture_offset}')
+            stream_file = self.stream_dir / 'stream.m3u8'
+            
+            self.web_stream_process = subprocess.Popen([
+                'ffmpeg', '-y',
+                '-f', 'x11grab',
+                '-video_size', self.capture_size,
+                '-framerate', '25',
+                '-i', f':99.0+{self.capture_offset}',
+                '-f', 'pulse',
+                '-i', 'default',
+                '-c:v', 'libx264',
+                '-preset', 'ultrafast',
+                '-tune', 'zerolatency',
+                '-g', '50',
+                '-keyint_min', '25',
+                '-sc_threshold', '0',
+                '-b:v', '500k',
+                '-maxrate', '500k',
+                '-bufsize', '1000k',
+                '-c:a', 'aac',
+                '-b:a', '128k',
+                '-ar', '44100',
+                '-f', 'hls',
+                '-hls_time', '2',
+                '-hls_list_size', '5',
+                '-hls_flags', 'delete_segments',
+                str(stream_file)
+            ])
+            logger.info(f'Web HLS streaming started with capture at :99.0+{self.capture_offset}')
+            
+        except Exception as e:
+            logger.error(f'Failed to start web stream: {e}')
 
     def start_youtube_stream(self):
         if not self.youtube_key:
@@ -242,58 +231,47 @@ class SpectrumEmulator:
             return
             
         try:
-            logger.info(f'Starting YouTube RTMP stream at {self.output_resolution}')
+            logger.info('Starting YouTube RTMP stream')
             
             # Use test pattern if emulator failed, otherwise use X11 capture
             if self.emulator_process is None:
                 # Test pattern for YouTube
                 input_args = [
                     '-f', 'lavfi',
-                    '-i', f'testsrc2=size={self.output_resolution}:rate=25:duration=0',
+                    '-i', f'testsrc2=size={self.capture_size}:rate=25:duration=0',
                     '-f', 'lavfi', 
                     '-i', 'sine=frequency=1000:duration=0'
                 ]
             else:
-                # Scaled X11 capture for YouTube
+                # X11 capture for YouTube
                 input_args = [
                     '-f', 'x11grab',
-                    '-video_size', self.display_size,
+                    '-video_size', self.capture_size,
                     '-framerate', '25',
-                    '-i', ':99.0+0,0',
+                    '-i', f':99.0+{self.capture_offset}',
                     '-f', 'pulse',
                     '-i', 'default'
                 ]
             
-            # Build FFmpeg command with scaling
-            ffmpeg_cmd = ['ffmpeg', '-y'] + input_args
-            
-            # Add scaling if capturing from X11
-            if self.emulator_process is not None:
-                ffmpeg_cmd.extend([
-                    '-vf', f'scale={self.output_resolution}:flags=neighbor'
-                ])
-            
-            # Add encoding settings
-            ffmpeg_cmd.extend([
+            self.youtube_stream_process = subprocess.Popen([
+                'ffmpeg', '-y'
+            ] + input_args + [
                 '-c:v', 'libx264',
                 '-preset', 'veryfast',
                 '-tune', 'zerolatency',
                 '-g', '50',
                 '-keyint_min', '25',
                 '-sc_threshold', '0',
-                '-b:v', '2500k',  # Higher bitrate for YouTube
-                '-maxrate', '3000k',
-                '-bufsize', '6000k',
-                '-pix_fmt', 'yuv420p',
+                '-b:v', '1000k',
+                '-maxrate', '1000k',
+                '-bufsize', '2000k',
                 '-c:a', 'aac',
                 '-b:a', '128k',
                 '-ar', '44100',
                 '-f', 'flv',
                 f'rtmp://a.rtmp.youtube.com/live2/{self.youtube_key}'
             ])
-            
-            self.youtube_stream_process = subprocess.Popen(ffmpeg_cmd)
-            logger.info(f'YouTube RTMP streaming started at {self.output_resolution}')
+            logger.info('YouTube RTMP streaming started')
             
         except Exception as e:
             logger.error(f'Failed to start YouTube stream: {e}')
@@ -382,8 +360,7 @@ class SpectrumEmulator:
             # Send initial status
             await websocket.send(json.dumps({
                 'type': 'connected',
-                'emulator_running': self.emulator_process is not None,
-                'output_resolution': self.output_resolution
+                'emulator_running': self.emulator_process is not None
             }))
             
             async for message in websocket:
@@ -396,8 +373,7 @@ class SpectrumEmulator:
                         await websocket.send(json.dumps({
                             'type': 'emulator_status',
                             'running': success,
-                            'message': 'Emulator started successfully' if success else 'Emulator failed to start, using test pattern',
-                            'output_resolution': self.output_resolution
+                            'message': 'Emulator started successfully' if success else 'Emulator failed to start, using test pattern'
                         }))
                     
                     elif data.get('type') == 'stop_emulator':
@@ -412,8 +388,7 @@ class SpectrumEmulator:
                         await websocket.send(json.dumps({
                             'type': 'emulator_status',
                             'running': self.emulator_process is not None,
-                            'message': 'Status check',
-                            'output_resolution': self.output_resolution
+                            'message': 'Status check'
                         }))
                     
                     elif data.get('type') == 'key_press':
@@ -432,24 +407,23 @@ class SpectrumEmulator:
             self.connected_clients.discard(websocket)
 
     async def health_check(self, request):
-        return web.Response(text=f'OK - Emulator server running at {self.output_resolution}', status=200)
+        return web.Response(text='OK - Emulator server running', status=200)
 
     async def start_streaming(self, request):
         success = self.start_emulator()
         return web.json_response({
             'success': success,
-            'message': 'Streaming started' if success else 'Streaming started with test pattern',
-            'output_resolution': self.output_resolution
+            'message': 'Streaming started' if success else 'Streaming started with test pattern'
         })
 
     def run(self):
         # Auto-start emulator
-        logger.info('Auto-starting emulator with scaling...')
+        logger.info('Auto-starting emulator...')
         success = self.start_emulator()
         if success:
-            logger.info(f'Emulator auto-started successfully at {self.output_resolution}')
+            logger.info('Emulator auto-started successfully')
         else:
-            logger.info(f'Emulator auto-start failed, using test pattern at {self.output_resolution}')
+            logger.info('Emulator auto-start failed, using test pattern')
         
         # Start HTTP server for health checks
         app = web.Application()
@@ -467,7 +441,7 @@ class SpectrumEmulator:
         async def start_servers():
             await init_app()
             await websockets.serve(self.handle_websocket, '0.0.0.0', 8765)
-            logger.info(f'WebSocket server started on port 8765 - ZX Spectrum Emulator ready with {self.output_resolution} scaling!')
+            logger.info('WebSocket server started on port 8765 - ZX Spectrum Emulator ready with enhanced SDL support!')
         
         # Run the event loop
         loop = asyncio.get_event_loop()

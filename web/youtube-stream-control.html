@@ -3,288 +3,632 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZX Spectrum YouTube Stream Control</title>
+    <title>ZX Spectrum - YouTube Stream Control</title>
     <style>
-        body {
-            font-family: 'Courier New', monospace;
-            background: #000;
-            color: #00ff00;
-            padding: 20px;
+        * {
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        .container {
-            max-width: 800px;
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ff0000, #cc0000);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 2rem;
+            text-align: center;
+            border-bottom: 3px solid #ff0000;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .main-container {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 1200px;
             margin: 0 auto;
-            background: #111;
-            padding: 20px;
-            border: 2px solid #00ff00;
-            border-radius: 10px;
+            width: 100%;
         }
-        h1 {
-            text-align: center;
-            color: #ffff00;
-            text-shadow: 2px 2px 4px #000;
-        }
-        .status {
-            background: #222;
-            padding: 15px;
-            margin: 10px 0;
-            border-left: 4px solid #00ff00;
-        }
-        .status.disconnected {
-            border-left-color: #ff0000;
-            color: #ff6666;
-        }
-        .status.streaming {
-            border-left-color: #ffff00;
-            color: #ffff66;
-        }
-        button {
-            background: #333;
-            color: #00ff00;
-            border: 2px solid #00ff00;
-            padding: 10px 20px;
-            margin: 5px;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 14px;
-            border-radius: 5px;
-            transition: all 0.3s;
-        }
-        button:hover {
-            background: #00ff00;
-            color: #000;
-        }
-        button:disabled {
-            background: #666;
-            color: #999;
-            border-color: #666;
-            cursor: not-allowed;
-        }
-        .controls {
-            text-align: center;
-            margin: 20px 0;
-        }
-        .log {
-            background: #000;
-            color: #00ff00;
-            padding: 10px;
-            height: 200px;
-            overflow-y: auto;
-            border: 1px solid #333;
-            font-size: 12px;
-            white-space: pre-wrap;
-        }
-        .youtube-info {
-            background: #330000;
+
+        .control-panel {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 15px;
+            padding: 2rem;
             border: 2px solid #ff0000;
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 5px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
-        .youtube-info h3 {
-            color: #ff6666;
-            margin-top: 0;
+
+        .panel-title {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            color: #ff0000;
+            border-bottom: 2px solid #ff0000;
+            padding-bottom: 0.5rem;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .status-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .status-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ff0000;
+        }
+
+        .status-value.connected {
+            color: #00ff00;
+        }
+
+        .status-value.streaming {
+            color: #ff0000;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .control-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .control-button {
+            background: linear-gradient(45deg, #ff0000, #cc0000);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .control-button:hover {
+            background: linear-gradient(45deg, #cc0000, #990000);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 0, 0, 0.4);
+        }
+
+        .control-button:active {
+            transform: translateY(0);
+        }
+
+        .control-button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .control-button.stop {
+            background: linear-gradient(45deg, #666, #444);
+        }
+
+        .control-button.stop:hover:not(:disabled) {
+            background: linear-gradient(45deg, #888, #666);
+        }
+
+        .quality-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+        }
+
+        .quality-title {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: #ff0000;
+        }
+
+        .quality-specs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .spec-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.3rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .spec-label {
+            opacity: 0.8;
+        }
+
+        .spec-value {
+            font-weight: bold;
+            color: #ff0000;
+        }
+
+        .log-container {
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 10px;
+            padding: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ff0000;
+        }
+
+        .log-title {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: #ff0000;
+        }
+
+        .log-entry {
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+            padding: 0.3rem;
+            border-radius: 3px;
+            line-height: 1.4;
+        }
+
+        .log-entry.info {
+            background: rgba(0, 123, 255, 0.1);
+            color: #87ceeb;
+        }
+
+        .log-entry.success {
+            background: rgba(40, 167, 69, 0.1);
+            color: #90ee90;
+        }
+
+        .log-entry.error {
+            background: rgba(220, 53, 69, 0.1);
+            color: #ffb3b3;
+        }
+
+        .log-entry.warning {
+            background: rgba(255, 193, 7, 0.1);
+            color: #ffd700;
+        }
+
+        .youtube-info {
+            background: rgba(255, 0, 0, 0.1);
+            padding: 1.5rem;
+            border-radius: 10px;
+            border: 2px solid #ff0000;
+            margin-bottom: 1.5rem;
+        }
+
+        .youtube-title {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .stream-key-info {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 1rem;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .stream-url {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .quality-specs {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .connection-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+
+        .connection-indicator.connected {
+            background: #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        .connection-indicator.disconnected {
+            background: #ff0000;
+            box-shadow: 0 0 10px #ff0000;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🎮 ZX Spectrum → YouTube Live Stream</h1>
-        
-        <div class="youtube-info">
-            <h3>📺 YouTube Stream Configuration</h3>
-            <p><strong>Stream Key:</strong> 0ebh-efdh-9qtq-2eq3-e6hz</p>
-            <p><strong>RTMP URL:</strong> rtmp://a.rtmp.youtube.com/live2</p>
-            <p><strong>Status:</strong> <span id="youtube-status">Configured ✅</span></p>
+    <div class="header">
+        <h1>📺 ZX Spectrum YouTube Stream Control</h1>
+        <p>High-Quality Live Streaming Dashboard</p>
+    </div>
+
+    <div class="main-container">
+        <div class="control-panel">
+            <h2 class="panel-title">🎮 Stream Control</h2>
+            
+            <div class="youtube-info">
+                <div class="youtube-title">🔴 YouTube Live Stream</div>
+                <div class="stream-key-info">
+                    <div>Stream Key: 0ebh-efdh-9qtq-2eq3-e6hz</div>
+                    <div class="stream-url">rtmp://a.rtmp.youtube.com/live2</div>
+                </div>
+            </div>
+
+            <div class="status-grid">
+                <div class="status-card">
+                    <div class="status-label">Connection</div>
+                    <div id="connectionStatus" class="status-value">
+                        <span class="connection-indicator disconnected"></span>
+                        Disconnected
+                    </div>
+                </div>
+                <div class="status-card">
+                    <div class="status-label">Stream Status</div>
+                    <div id="streamStatus" class="status-value">Stopped</div>
+                </div>
+                <div class="status-card">
+                    <div class="status-label">Quality Mode</div>
+                    <div id="qualityMode" class="status-value">Stable Bitrate</div>
+                </div>
+                <div class="status-card">
+                    <div class="status-label">Emulator</div>
+                    <div id="emulatorStatus" class="status-value">Ready</div>
+                </div>
+            </div>
+
+            <div class="control-buttons">
+                <button id="startBtn" class="control-button" onclick="startStreaming()">
+                    🚀 Start YouTube Stream
+                </button>
+                <button id="stopBtn" class="control-button stop" onclick="stopStreaming()" disabled>
+                    ⏹️ Stop Stream
+                </button>
+                <button class="control-button" onclick="getStatus()">
+                    📊 Get Status
+                </button>
+                <button class="control-button" onclick="refreshConnection()">
+                    🔄 Refresh Connection
+                </button>
+            </div>
         </div>
-        
-        <div id="connection-status" class="status disconnected">
-            🔌 WebSocket: Disconnected
-        </div>
-        
-        <div id="streaming-status" class="status">
-            📡 Streaming: Not Started
-        </div>
-        
-        <div class="controls">
-            <button id="connect-btn" onclick="connectWebSocket()">Connect to Server</button>
-            <button id="start-stream-btn" onclick="startStreaming()" disabled>🚀 Start YouTube Stream</button>
-            <button id="stop-stream-btn" onclick="stopStreaming()" disabled>⏹️ Stop Stream</button>
-            <button id="status-btn" onclick="getStatus()" disabled>📊 Get Status</button>
-        </div>
-        
-        <div>
-            <h3>📋 Activity Log</h3>
-            <div id="log" class="log">Waiting for connection...\n</div>
+
+        <div class="control-panel">
+            <h2 class="panel-title">📊 Stream Quality</h2>
+            
+            <div class="quality-info">
+                <div class="quality-title">🎬 Current Configuration</div>
+                <div class="quality-specs">
+                    <div class="spec-item">
+                        <span class="spec-label">Resolution:</span>
+                        <span class="spec-value">1920x1080</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">Frame Rate:</span>
+                        <span class="spec-value">30 FPS</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">Video Bitrate:</span>
+                        <span class="spec-value">1500k stable</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">Audio Bitrate:</span>
+                        <span class="spec-value">128k</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">Codec:</span>
+                        <span class="spec-value">H.264 Main</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">Audio:</span>
+                        <span class="spec-value">AAC Stereo</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">Min Bitrate:</span>
+                        <span class="spec-value">1000k</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">Max Bitrate:</span>
+                        <span class="spec-value">2000k</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="log-container">
+                <div class="log-title">📋 Activity Log</div>
+                <div id="logContent">
+                    <div class="log-entry info">[Starting] YouTube Stream Control Interface</div>
+                    <div class="log-entry info">[Info] Connecting to streaming server...</div>
+                    <div class="log-entry info">[Info] Auto-detecting stream status...</div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        let ws = null;
-        let isConnected = false;
-        let isStreaming = false;
-
-        const log = document.getElementById('log');
-        const connectionStatus = document.getElementById('connection-status');
-        const streamingStatus = document.getElementById('streaming-status');
-        const connectBtn = document.getElementById('connect-btn');
-        const startBtn = document.getElementById('start-stream-btn');
-        const stopBtn = document.getElementById('stop-stream-btn');
-        const statusBtn = document.getElementById('status-btn');
-
-        function addLog(message) {
-            const timestamp = new Date().toLocaleTimeString();
-            log.textContent += `[${timestamp}] ${message}\n`;
-            log.scrollTop = log.scrollHeight;
-        }
-
-        function updateConnectionStatus(connected) {
-            isConnected = connected;
-            if (connected) {
-                connectionStatus.textContent = '🔌 WebSocket: Connected ✅';
-                connectionStatus.className = 'status';
-                connectBtn.textContent = 'Disconnect';
-                startBtn.disabled = false;
-                statusBtn.disabled = false;
-            } else {
-                connectionStatus.textContent = '🔌 WebSocket: Disconnected ❌';
-                connectionStatus.className = 'status disconnected';
-                connectBtn.textContent = 'Connect to Server';
-                startBtn.disabled = true;
-                stopBtn.disabled = true;
-                statusBtn.disabled = true;
-            }
-        }
-
-        function updateStreamingStatus(streaming, message = '') {
-            isStreaming = streaming;
-            if (streaming) {
-                streamingStatus.textContent = `📡 Streaming: LIVE on YouTube 🔴 ${message}`;
-                streamingStatus.className = 'status streaming';
-                startBtn.disabled = true;
-                stopBtn.disabled = false;
-            } else {
-                streamingStatus.textContent = `📡 Streaming: Stopped ${message}`;
-                streamingStatus.className = 'status';
-                startBtn.disabled = false;
-                stopBtn.disabled = true;
-            }
-        }
-
-        function connectWebSocket() {
-            if (isConnected) {
-                // Disconnect
-                if (ws) {
-                    ws.close();
-                }
-                return;
-            }
-
-            addLog('Connecting to streaming server...');
-            
-            // Try CloudFront WebSocket endpoint
-            const wsUrl = 'wss://d112s3ps8xh739.cloudfront.net/ws/';
-            
-            try {
-                ws = new WebSocket(wsUrl);
+        class YouTubeStreamControl {
+            constructor() {
+                this.ws = null;
+                this.connected = false;
+                this.streaming = false;
+                this.reconnectAttempts = 0;
+                this.maxReconnectAttempts = 5;
                 
-                ws.onopen = function(event) {
-                    addLog('✅ Connected to streaming server!');
-                    updateConnectionStatus(true);
-                };
-                
-                ws.onmessage = function(event) {
-                    try {
-                        const data = JSON.parse(event.data);
-                        addLog(`📨 Received: ${data.type} - ${data.message}`);
+                this.init();
+            }
+
+            init() {
+                this.connectWebSocket();
+                this.log('🚀 YouTube Stream Control initialized', 'info');
+            }
+
+            connectWebSocket() {
+                const wsUrl = 'wss://d112s3ps8xh739.cloudfront.net/ws/';
+                this.log(`🔌 Connecting to ${wsUrl}...`, 'info');
+
+                try {
+                    this.ws = new WebSocket(wsUrl);
+                    
+                    this.ws.onopen = () => {
+                        this.connected = true;
+                        this.reconnectAttempts = 0;
+                        this.updateConnectionStatus(true);
+                        this.log('✅ Connected to YouTube streaming server!', 'success');
                         
-                        switch(data.type) {
-                            case 'connected':
-                                addLog(`🎮 Server: ${data.message}`);
-                                if (data.streaming_to) {
-                                    addLog(`📺 Streaming to: ${data.streaming_to}`);
-                                }
-                                break;
-                            case 'streaming_started':
-                                updateStreamingStatus(true, '- Emulator Running');
-                                addLog('🚀 YouTube streaming started!');
-                                break;
-                            case 'streaming_stopped':
-                                updateStreamingStatus(false, '- Stream Ended');
-                                addLog('⏹️ YouTube streaming stopped');
-                                break;
-                            case 'status_response':
-                                addLog(`📊 Status: Emulator ${data.emulator_running ? 'Running' : 'Stopped'}`);
-                                updateStreamingStatus(data.emulator_running);
-                                break;
-                            case 'error':
-                                addLog(`❌ Error: ${data.message}`);
-                                break;
+                        // Auto-request status to check if streaming is already active
+                        setTimeout(() => {
+                            this.sendMessage({ type: 'status' });
+                            this.log('🔍 Checking stream status...', 'info');
+                        }, 1000);
+                    };
+
+                    this.ws.onmessage = (event) => {
+                        try {
+                            const data = JSON.parse(event.data);
+                            this.handleMessage(data);
+                        } catch (e) {
+                            this.log(`❌ Invalid message: ${event.data}`, 'error');
                         }
-                    } catch (e) {
-                        addLog(`❌ Failed to parse message: ${event.data}`);
-                    }
-                };
+                    };
+
+                    this.ws.onclose = () => {
+                        this.connected = false;
+                        this.updateConnectionStatus(false);
+                        this.log('🔌 Connection closed', 'warning');
+                        this.attemptReconnect();
+                    };
+
+                    this.ws.onerror = (error) => {
+                        this.log('❌ WebSocket error occurred', 'error');
+                    };
+                } catch (error) {
+                    this.log(`❌ Connection failed: ${error.message}`, 'error');
+                    this.attemptReconnect();
+                }
+            }
+
+            attemptReconnect() {
+                if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                    this.reconnectAttempts++;
+                    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 10000);
+                    this.log(`🔄 Reconnecting in ${delay/1000}s... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`, 'info');
+                    setTimeout(() => this.connectWebSocket(), delay);
+                } else {
+                    this.log('❌ Max reconnection attempts reached', 'error');
+                }
+            }
+
+            handleMessage(data) {
+                switch (data.type) {
+                    case 'connected':
+                        this.log(`🎬 ${data.message}`, 'success');
+                        if (data.quality) {
+                            this.updateQualityMode(data.quality);
+                        }
+                        // Auto-request status to see if already streaming
+                        setTimeout(() => {
+                            this.sendMessage({ type: 'status' });
+                        }, 500);
+                        break;
+                    
+                    case 'streaming_started':
+                        this.streaming = true;
+                        this.updateStreamStatus(true);
+                        this.log(`🔴 ${data.message}`, 'success');
+                        break;
+                    
+                    case 'already_streaming':
+                        this.streaming = true;
+                        this.updateStreamStatus(true);
+                        this.log(`🔴 Stream already active`, 'info');
+                        break;
+                    
+                    case 'streaming_stopped':
+                        this.streaming = false;
+                        this.updateStreamStatus(false);
+                        this.log(`⏹️ ${data.message}`, 'info');
+                        break;
+                    
+                    case 'status_response':
+                        this.log(`📊 ${data.message}`, 'info');
+                        if (data.emulator_running || data.streaming_active) {
+                            this.streaming = true;
+                            this.updateStreamStatus(true);
+                            this.log('🔴 YouTube stream is already LIVE!', 'success');
+                        } else {
+                            this.streaming = false;
+                            this.updateStreamStatus(false);
+                            this.log('⚠️ Stream not active - click Start to begin', 'info');
+                        }
+                        if (data.quality) {
+                            this.updateQualityMode(data.quality);
+                        }
+                        break;
+                    
+                    case 'error':
+                        this.log(`❌ Error: ${data.message}`, 'error');
+                        break;
+                    
+                    default:
+                        this.log(`📨 ${data.message || 'Unknown message'}`, 'info');
+                }
+            }
+
+            sendMessage(message) {
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify(message));
+                    return true;
+                } else {
+                    this.log('❌ Not connected to server', 'error');
+                    return false;
+                }
+            }
+
+            updateConnectionStatus(connected) {
+                const status = document.getElementById('connectionStatus');
+                const indicator = status.querySelector('.connection-indicator');
                 
-                ws.onclose = function(event) {
-                    addLog(`🔌 Connection closed (${event.code})`);
-                    updateConnectionStatus(false);
-                    updateStreamingStatus(false);
-                };
+                if (connected) {
+                    status.innerHTML = '<span class="connection-indicator connected"></span>Connected';
+                    status.className = 'status-value connected';
+                } else {
+                    status.innerHTML = '<span class="connection-indicator disconnected"></span>Disconnected';
+                    status.className = 'status-value';
+                }
+            }
+
+            updateStreamStatus(streaming) {
+                const status = document.getElementById('streamStatus');
+                const startBtn = document.getElementById('startBtn');
+                const stopBtn = document.getElementById('stopBtn');
                 
-                ws.onerror = function(error) {
-                    addLog(`❌ WebSocket error: ${error}`);
-                    updateConnectionStatus(false);
-                };
+                if (streaming) {
+                    status.textContent = '🔴 LIVE';
+                    status.className = 'status-value streaming';
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                } else {
+                    status.textContent = 'Stopped';
+                    status.className = 'status-value';
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+                }
+            }
+
+            updateQualityMode(quality) {
+                const status = document.getElementById('qualityMode');
+                status.textContent = quality;
+            }
+
+            log(message, type = 'info') {
+                const logContent = document.getElementById('logContent');
+                const timestamp = new Date().toLocaleTimeString();
+                const entry = document.createElement('div');
+                entry.className = `log-entry ${type}`;
+                entry.textContent = `[${timestamp}] ${message}`;
                 
-            } catch (error) {
-                addLog(`❌ Failed to connect: ${error}`);
+                logContent.appendChild(entry);
+                logContent.scrollTop = logContent.scrollHeight;
+                
+                // Keep only last 50 entries
+                while (logContent.children.length > 50) {
+                    logContent.removeChild(logContent.firstChild);
+                }
             }
         }
+
+        // Global functions for buttons
+        let streamControl;
 
         function startStreaming() {
-            if (!isConnected) {
-                addLog('❌ Not connected to server');
-                return;
+            if (streamControl.sendMessage({ type: 'start_streaming' })) {
+                streamControl.log('🚀 Starting YouTube stream...', 'info');
             }
-            
-            addLog('🚀 Starting YouTube stream...');
-            ws.send(JSON.stringify({
-                type: 'start_streaming'
-            }));
         }
 
         function stopStreaming() {
-            if (!isConnected) {
-                addLog('❌ Not connected to server');
-                return;
+            if (streamControl.sendMessage({ type: 'stop_streaming' })) {
+                streamControl.log('⏹️ Stopping YouTube stream...', 'info');
             }
-            
-            addLog('⏹️ Stopping stream...');
-            ws.send(JSON.stringify({
-                type: 'stop_streaming'
-            }));
         }
 
         function getStatus() {
-            if (!isConnected) {
-                addLog('❌ Not connected to server');
-                return;
+            if (streamControl.sendMessage({ type: 'status' })) {
+                streamControl.log('📊 Requesting stream status...', 'info');
             }
-            
-            addLog('📊 Requesting status...');
-            ws.send(JSON.stringify({
-                type: 'status'
-            }));
         }
 
-        // Auto-connect on page load
-        window.onload = function() {
-            addLog('🎮 ZX Spectrum YouTube Stream Control Ready');
-            addLog('📺 YouTube Stream Key: 0ebh-efdh-9qtq-2eq3-e6hz');
-            addLog('🔗 Click "Connect to Server" to begin');
-        };
+        function refreshConnection() {
+            streamControl.log('🔄 Refreshing connection...', 'info');
+            streamControl.ws.close();
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            streamControl = new YouTubeStreamControl();
+        });
     </script>
 </body>
 </html>

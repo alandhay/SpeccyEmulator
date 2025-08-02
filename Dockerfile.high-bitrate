@@ -1,21 +1,24 @@
-# Use Ubuntu 22.04 as base image
+# High Bitrate ZX Spectrum Streaming Docker Image
 FROM ubuntu:22.04
 
-# Set environment variables
+# Set environment variables for high quality streaming
 ENV DEBIAN_FRONTEND=noninteractive \
     DISPLAY=:99 \
     STREAM_BUCKET=spectrum-emulator-stream-dev-043309319786 \
-    PULSE_RUNTIME_PATH=/tmp/pulse
+    PULSE_RUNTIME_PATH=/tmp/pulse \
+    VIDEO_BITRATE=5000k \
+    YOUTUBE_BITRATE=6000k \
+    OUTPUT_RESOLUTION=1920x1080
 
-# Install all dependencies in a single layer to minimize image size
+# Install all dependencies
 RUN apt-get update && apt-get install -y \
     # Core system packages
     curl wget unzip ca-certificates \
-    # Build tools (minimal set)
+    # Build tools
     build-essential \
     # Python and development
     python3 python3-pip python3-dev \
-    # FFmpeg and multimedia
+    # FFmpeg and multimedia (latest version for better encoding)
     ffmpeg \
     # X11 and display
     xvfb x11-utils \
@@ -25,7 +28,7 @@ RUN apt-get update && apt-get install -y \
     fuse-emulator-sdl fuse-emulator-common \
     # AWS CLI
     awscli \
-    # Cleanup in same layer to reduce image size
+    # Cleanup
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /tmp/* \
@@ -45,9 +48,9 @@ RUN useradd -m -s /bin/bash spectrum && \
     mkdir -p /app/stream/hls /app/logs && \
     chown -R spectrum:spectrum /app
 
-# Copy application files
-COPY --chown=spectrum:spectrum server/ /app/server/
-COPY --chown=spectrum:spectrum scripts/start-emulator-container.sh /app/start-emulator.sh
+# Copy high bitrate server configuration
+COPY --chown=spectrum:spectrum server/emulator_server_hq.py /app/server/emulator_server.py
+COPY --chown=spectrum:spectrum scripts/start-hq-container.sh /app/start-emulator.sh
 
 # Make scripts executable
 RUN chmod +x /app/start-emulator.sh
@@ -59,8 +62,8 @@ WORKDIR /app
 # Expose ports
 EXPOSE 8080 8765
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+# Health check with longer timeout for high quality encoding
+HEALTHCHECK --interval=30s --timeout=15s --start-period=180s --retries=3 \
     CMD curl -f http://localhost:8080/health || exit 1
 
 # Start the application
