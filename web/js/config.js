@@ -3,8 +3,8 @@ const CONFIG = {
     // WebSocket connection - using new RTMP-enabled task
     WEBSOCKET_URL: 'ws://54.164.181.209:8765',
     
-    // Video stream - direct from container (no S3 dependency)
-    STREAM_URL: 'http://54.164.181.209:8080/stream/stream.m3u8',
+    // Video stream - live emulator output from S3
+    STREAM_URL: 'https://spectrum-emulator-stream-dev-043309319786.s3.us-east-1.amazonaws.com/hls/stream.m3u8',
     
     // Connection settings
     RECONNECT_INTERVAL: 3000,

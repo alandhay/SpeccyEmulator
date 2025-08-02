@@ -328,6 +328,19 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        .stream-info {
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid #00ff00;
+            border-radius: 5px;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .stream-info strong {
+            color: #00ff00;
+        }
     </style>
 </head>
 <body>
@@ -338,13 +351,13 @@
                 ⚡ Disconnected
             </div>
             <div id="streamStatus" class="status-item">
-                📺 1920x1080 @ 30fps
+                📺 1920x1080 @ 6Mbps
             </div>
             <div id="qualityStatus" class="status-item">
-                🎬 Stable Bitrate Mode
+                🎬 HIGH QUALITY Mode
             </div>
             <div id="emulatorStatus" class="status-item">
-                🎮 Live Stream
+                🎮 Ready
             </div>
         </div>
     </div>
@@ -352,17 +365,22 @@
     <div class="main-container">
         <div class="stream-container">
             <div class="stream-header">
-                <div class="stream-title">📡 Live Stream</div>
-                <div class="quality-badge">HD 1080p</div>
+                <div class="stream-title">📡 Live Emulator Stream</div>
+                <div class="quality-badge">HD 1080p @ 6Mbps</div>
             </div>
+            
+            <div class="stream-info">
+                <strong>Stream Info:</strong> This shows the live emulator output. When the emulator is running, you'll see the ZX Spectrum display. When stopped, you'll see a test pattern. Use the keyboard below to interact with the emulator in real-time!
+            </div>
+            
             <div class="video-wrapper">
                 <video id="videoPlayer" controls autoplay muted>
-                    <source src="https://spectrum-emulator-stream-dev-043309319786.s3.us-east-1.amazonaws.com/hls/stream.m3u8" type="application/x-mpegURL">
+                    <source src="https://spectrum-emulator-stream-dev-043309319786.s3.us-east-1.amazonaws.com/hls/stream.m3u8" type="application/x-mpegURL" id="videoSource">
                     Your browser does not support HLS video streaming.
                 </video>
                 <div class="video-overlay">
                     <div>🔴 LIVE</div>
-                    <div id="streamInfo">Live Emulator Stream</div>
+                    <div id="streamInfo">Connecting...</div>
                 </div>
                 <button class="fullscreen-btn" onclick="toggleFullscreen()">⛶</button>
             </div>
@@ -446,7 +464,7 @@
             <div class="log-container">
                 <h3 class="log-title">📋 Activity Log</h3>
                 <div id="logContent" class="log-content">
-                    <div class="log-entry info">🚀 ZX Spectrum Emulator Interface Ready</div>
+                    <div class="log-entry info">🚀 ZX Spectrum HIGH QUALITY Emulator Interface Ready</div>
                     <div class="log-entry">📺 Connecting to live emulator stream...</div>
                     <div class="log-entry">🎮 Auto-detecting emulator status...</div>
                 </div>
@@ -455,323 +473,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script>
-        class SpectrumEmulator {
-            constructor() {
-                this.ws = null;
-                this.hls = null;
-                this.connected = false;
-                this.emulatorRunning = false;
-                this.reconnectAttempts = 0;
-                this.maxReconnectAttempts = 5;
-                
-                this.init();
-            }
-
-            init() {
-                this.setupHLS();
-                this.connectWebSocket();
-                this.setupKeyboard();
-                this.setupPhysicalKeyboard();
-                this.log('🎮 Initializing ZX Spectrum Emulator Interface...', 'info');
-                this.log('📺 Auto-connecting to live emulator stream...', 'info');
-            }
-
-            setupHLS() {
-                const video = document.getElementById('videoPlayer');
-                const streamUrl = 'https://spectrum-emulator-stream-dev-043309319786.s3.us-east-1.amazonaws.com/hls/stream.m3u8';
-
-                if (Hls.isSupported()) {
-                    this.hls = new Hls({
-                        debug: false,
-                        enableWorker: true,
-                        lowLatencyMode: true,
-                        backBufferLength: 90
-                    });
-                    
-                    this.hls.loadSource(streamUrl);
-                    this.hls.attachMedia(video);
-                    
-                    this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                        this.log('📺 HD Stream connected successfully!', 'success');
-                        this.updateStreamInfo('Live Emulator Stream');
-                        video.play().catch(e => {
-                            this.log('⚠️ Autoplay blocked - click video to start', 'info');
-                        });
-                    });
-
-                    this.hls.on(Hls.Events.ERROR, (event, data) => {
-                        this.log(`❌ Stream error: ${data.type} - ${data.details}`, 'error');
-                        if (data.fatal) {
-                            this.log('🔄 Attempting to recover stream...', 'info');
-                            this.hls.recoverMediaError();
-                        }
-                    });
-                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                    video.src = streamUrl;
-                    this.log('📺 Using native HLS support', 'info');
-                } else {
-                    this.log('❌ HLS not supported in this browser', 'error');
-                }
-            }
-
-            connectWebSocket() {
-                const wsUrl = 'wss://d112s3ps8xh739.cloudfront.net/ws/';
-                this.log(`🔌 Connecting to ${wsUrl}...`, 'info');
-
-                try {
-                    this.ws = new WebSocket(wsUrl);
-                    
-                    this.ws.onopen = () => {
-                        this.connected = true;
-                        this.reconnectAttempts = 0;
-                        this.updateConnectionStatus(true);
-                        this.log('✅ Connected to emulator server!', 'success');
-                        
-                        // Auto-request status to check if emulator is already running
-                        setTimeout(() => {
-                            this.sendMessage({ type: 'status' });
-                            this.log('🔍 Checking emulator status...', 'info');
-                        }, 1000);
-                    };
-
-                    this.ws.onmessage = (event) => {
-                        try {
-                            const data = JSON.parse(event.data);
-                            this.handleMessage(data);
-                        } catch (e) {
-                            this.log(`❌ Invalid message received: ${event.data}`, 'error');
-                        }
-                    };
-
-                    this.ws.onclose = () => {
-                        this.connected = false;
-                        this.updateConnectionStatus(false);
-                        this.log('🔌 Connection closed', 'error');
-                        this.attemptReconnect();
-                    };
-
-                    this.ws.onerror = (error) => {
-                        this.log('❌ WebSocket error occurred', 'error');
-                    };
-                } catch (error) {
-                    this.log(`❌ Failed to connect: ${error.message}`, 'error');
-                    this.attemptReconnect();
-                }
-            }
-
-            attemptReconnect() {
-                if (this.reconnectAttempts < this.maxReconnectAttempts) {
-                    this.reconnectAttempts++;
-                    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 10000);
-                    this.log(`🔄 Reconnecting in ${delay/1000}s... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`, 'info');
-                    setTimeout(() => this.connectWebSocket(), delay);
-                } else {
-                    this.log('❌ Max reconnection attempts reached', 'error');
-                }
-            }
-
-            handleMessage(data) {
-                switch (data.type) {
-                    case 'connected':
-                        this.log(`🎬 ${data.message}`, 'success');
-                        if (data.quality) {
-                            this.updateQualityStatus(data.quality);
-                        }
-                        // Auto-request status to see if already streaming
-                        setTimeout(() => {
-                            this.sendMessage({ type: 'status' });
-                        }, 500);
-                        break;
-                    
-                    case 'streaming_started':
-                        this.emulatorRunning = true;
-                        this.updateEmulatorStatus(true);
-                        this.log(`🚀 ${data.message}`, 'success');
-                        break;
-                    
-                    case 'streaming_stopped':
-                        this.emulatorRunning = false;
-                        this.updateEmulatorStatus(false);
-                        this.log(`⏹️ ${data.message}`, 'info');
-                        break;
-                    
-                    case 'status_response':
-                        this.log(`📊 Status: ${data.message}`, 'info');
-                        if (data.quality) {
-                            this.updateQualityStatus(data.quality);
-                        }
-                        // Check if emulator is already running
-                        if (data.emulator_running || data.streaming_active) {
-                            this.emulatorRunning = true;
-                            this.updateEmulatorStatus(true);
-                            this.log('🎮 Emulator is already running and streaming!', 'success');
-                            this.updateStreamInfo('Live Emulator Stream');
-                        } else {
-                            this.log('⚠️ Emulator not running - click Start to begin', 'info');
-                        }
-                        break;
-                    
-                    case 'error':
-                        this.log(`❌ Error: ${data.message}`, 'error');
-                        break;
-                    
-                    default:
-                        this.log(`📨 ${data.message || 'Unknown message'}`, 'info');
-                }
-            }
-
-            sendMessage(message) {
-                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-                    this.ws.send(JSON.stringify(message));
-                    return true;
-                } else {
-                    this.log('❌ Not connected to server', 'error');
-                    return false;
-                }
-            }
-
-            setupKeyboard() {
-                document.querySelectorAll('.key').forEach(key => {
-                    key.addEventListener('click', () => {
-                        const keyValue = key.dataset.key;
-                        this.sendKey(keyValue);
-                    });
-                });
-            }
-
-            setupPhysicalKeyboard() {
-                document.addEventListener('keydown', (event) => {
-                    if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
-                        return; // Don't intercept when typing in inputs
-                    }
-                    
-                    event.preventDefault();
-                    let key = event.key.toUpperCase();
-                    
-                    // Map special keys
-                    const keyMap = {
-                        ' ': 'SPACE',
-                        'ENTER': 'ENTER',
-                        'SHIFT': 'SHIFT'
-                    };
-                    
-                    key = keyMap[key] || key;
-                    this.sendKey(key);
-                });
-            }
-
-            sendKey(key) {
-                if (this.sendMessage({ type: 'key_press', key: key })) {
-                    this.log(`⌨️ Key pressed: ${key}`, 'info');
-                    
-                    // Visual feedback
-                    const keyElement = document.querySelector(`[data-key="${key}"]`);
-                    if (keyElement) {
-                        keyElement.style.transform = 'translateY(2px)';
-                        setTimeout(() => {
-                            keyElement.style.transform = '';
-                        }, 100);
-                    }
-                }
-            }
-
-            updateConnectionStatus(connected) {
-                const status = document.getElementById('connectionStatus');
-                if (connected) {
-                    status.textContent = '⚡ Connected';
-                    status.className = 'status-item status-connected';
-                } else {
-                    status.textContent = '⚡ Disconnected';
-                    status.className = 'status-item status-disconnected';
-                }
-            }
-
-            updateEmulatorStatus(running) {
-                const status = document.getElementById('emulatorStatus');
-                const startBtn = document.getElementById('startBtn');
-                const stopBtn = document.getElementById('stopBtn');
-                
-                if (running) {
-                    status.textContent = '🎮 Running';
-                    status.className = 'status-item status-connected';
-                    startBtn.disabled = true;
-                    stopBtn.disabled = false;
-                } else {
-                    status.textContent = '🎯 Ready';
-                    status.className = 'status-item';
-                    startBtn.disabled = false;
-                    stopBtn.disabled = true;
-                }
-            }
-
-            updateQualityStatus(quality) {
-                const status = document.getElementById('qualityStatus');
-                status.textContent = `🎬 ${quality}`;
-            }
-
-            updateStreamInfo(info) {
-                const streamInfo = document.getElementById('streamInfo');
-                streamInfo.textContent = info;
-            }
-
-            log(message, type = 'info') {
-                const logContent = document.getElementById('logContent');
-                const timestamp = new Date().toLocaleTimeString();
-                const entry = document.createElement('div');
-                entry.className = `log-entry ${type}`;
-                entry.textContent = `[${timestamp}] ${message}`;
-                
-                logContent.appendChild(entry);
-                logContent.scrollTop = logContent.scrollHeight;
-                
-                // Keep only last 50 entries
-                while (logContent.children.length > 50) {
-                    logContent.removeChild(logContent.firstChild);
-                }
-            }
-        }
-
-        // Global functions for buttons
-        let emulator;
-
-        function startEmulator() {
-            if (emulator.sendMessage({ type: 'start_streaming' })) {
-                emulator.log('🚀 Starting emulator...', 'info');
-            }
-        }
-
-        function stopEmulator() {
-            if (emulator.sendMessage({ type: 'stop_streaming' })) {
-                emulator.log('⏹️ Stopping emulator...', 'info');
-            }
-        }
-
-        function requestStatus() {
-            if (emulator.sendMessage({ type: 'status' })) {
-                emulator.log('📊 Requesting status...', 'info');
-            }
-        }
-
-        function takeScreenshot() {
-            emulator.log('📸 Screenshot feature coming soon...', 'info');
-        }
-
-        function toggleFullscreen() {
-            const video = document.getElementById('videoPlayer');
-            if (document.fullscreenElement) {
-                document.exitFullscreen();
-            } else {
-                video.requestFullscreen().catch(err => {
-                    emulator.log(`❌ Fullscreen error: ${err.message}`, 'error');
-                });
-            }
-        }
-
-        // Initialize when page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            emulator = new SpectrumEmulator();
-        });
-    </script>
+    <script src="js/spectrum-emulator.js"></script>
 </body>
 </html>

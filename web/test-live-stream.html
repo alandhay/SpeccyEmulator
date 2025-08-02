@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Live Stream Test - No Cache</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+</head>
+<body>
+    <h1>Live Stream Test - Direct S3 Access</h1>
+    <p>This page loads the stream directly from S3 with cache-busting to ensure you see the live emulator output.</p>
+    
+    <video id="video" controls autoplay muted style="width: 800px; height: 600px; background: black;">
+        <source id="source" type="application/x-mpegURL">
+        Your browser does not support HLS.
+    </video>
+    
+    <br><br>
+    <button onclick="reloadStream()">Reload Stream (Force Fresh)</button>
+    <p id="status">Loading...</p>
+    
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script>
+        function reloadStream() {
+            const video = document.getElementById('video');
+            const source = document.getElementById('source');
+            const status = document.getElementById('status');
+            
+            // Add timestamp to force fresh load
+            const streamUrl = 'https://spectrum-emulator-stream-dev-043309319786.s3.us-east-1.amazonaws.com/hls/stream.m3u8?nocache=' + Date.now();
+            
+            status.textContent = 'Loading fresh stream: ' + new Date().toLocaleTimeString();
+            
+            if (window.hls) {
+                window.hls.destroy();
+            }
+            
+            if (Hls.isSupported()) {
+                window.hls = new Hls({
+                    debug: true,
+                    enableWorker: false,
+                    lowLatencyMode: true,
+                    backBufferLength: 10,
+                    maxBufferLength: 30,
+                    liveMaxLatencyDurationCount: 3
+                });
+                
+                window.hls.loadSource(streamUrl);
+                window.hls.attachMedia(video);
+                
+                window.hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    status.textContent = 'Stream loaded successfully at ' + new Date().toLocaleTimeString();
+                    video.play().catch(e => console.log('Autoplay blocked'));
+                });
+                
+                window.hls.on(Hls.Events.ERROR, function(event, data) {
+                    status.textContent = 'Error: ' + data.type + ' - ' + data.details;
+                    console.error('HLS Error:', data);
+                });
+            } else {
+                source.src = streamUrl;
+                video.load();
+                status.textContent = 'Using native HLS support';
+            }
+        }
+        
+        // Load stream on page load
+        reloadStream();
+        
+        // Auto-reload every 30 seconds to get fresh content
+        setInterval(reloadStream, 30000);
+    </script>
+</body>
+</html>
