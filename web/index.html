@@ -60,18 +60,36 @@
             border-color: #ff6b6b;
         }
 
+        /* =================================================================
+           VIDEO STREAMING LAYOUT - OPTIMIZED FOR ZX SPECTRUM EMULATOR
+           =================================================================
+           
+           This layout is specifically designed for the ZX Spectrum emulator
+           with the following key requirements:
+           
+           1. Full-width video display (960px max) for immersive experience
+           2. Keyboard positioned directly below video for easy access
+           3. Controls and logs moved to bottom to reduce clutter
+           4. Proper scaling and responsive design for all screen sizes
+           
+           Video Pipeline: FUSE Emulator (320x240) → FFmpeg (640x480) → HLS → Browser
+           ================================================================= */
+
+        /* Main container - vertical layout for video-first experience */
         .main-container {
             flex: 1;
             display: flex;
+            flex-direction: column;  /* Stack video, keyboard, controls vertically */
             gap: 1rem;
             padding: 1rem;
-            max-width: 1400px;
+            max-width: 1600px;       /* Allow for wide screens */
             margin: 0 auto;
             width: 100%;
         }
 
+        /* Video stream container - full width priority */
         .stream-container {
-            flex: 2;
+            width: 100%;
             background: rgba(0, 0, 0, 0.8);
             border-radius: 10px;
             padding: 1rem;
@@ -99,14 +117,27 @@
             font-size: 0.9rem;
         }
 
+        /* Video wrapper - optimized for ZX Spectrum 4:3 aspect ratio
+           
+           CRITICAL DIMENSIONS:
+           - Backend outputs: 640x480 (2x scaled from native 320x240)
+           - Frontend displays: up to 960px wide (maintains 4:3 ratio)
+           - Aspect ratio: 4:3 matches authentic ZX Spectrum proportions
+           
+           SCALING STRATEGY:
+           - Uses CSS aspect-ratio for consistent proportions
+           - object-fit: contain prevents distortion
+           - image-rendering: pixelated preserves retro pixel-perfect look
+           - Responsive design scales down on smaller screens
+        */
         .video-wrapper {
             position: relative;
             background: #000;
             border-radius: 8px;
             overflow: hidden;
-            aspect-ratio: 4/3;  /* ZX Spectrum native aspect ratio (512:384) */
-            max-width: 512px;   /* Match server output width */
-            width: 100%;        /* Responsive width */
+            aspect-ratio: 4/3;  /* ZX Spectrum native aspect ratio (640:480) */
+            width: 100%;        /* Full width within container */
+            max-width: 960px;   /* Optimal size - 20% smaller than 1200px for balance */
             margin: 0 auto;     /* Center the video */
             border: 2px solid var(--spectrum-gray, #808080);  /* Retro border */
         }
@@ -138,6 +169,31 @@
             padding: 0.5rem;
             border-radius: 5px;
             font-size: 0.8rem;
+        }
+
+        /* Keyboard container - scaled to match video width
+           
+           DESIGN PRINCIPLES:
+           - Width matches video (960px max) for visual harmony
+           - Positioned directly below video for immediate access
+           - Scaled proportionally larger than default for better usability
+           - Maintains authentic ZX Spectrum key layout
+        */
+        .keyboard-container {
+            width: 100%;
+            max-width: 960px;   /* Match video width exactly */
+            margin: 0 auto;     /* Center like the video */
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            padding: 1rem;
+            border: 2px solid #00ff00;
+            margin-bottom: 1rem;
+        }
+
+        .controls-and-log-container {
+            display: flex;
+            gap: 1rem;
+            width: 100%;
         }
 
         .controls-container {
@@ -194,12 +250,7 @@
             transform: none;
         }
 
-        .keyboard-container {
-            background: rgba(0, 0, 0, 0.8);
-            border-radius: 10px;
-            padding: 1rem;
-            border: 2px solid #00ff00;
-        }
+
 
         .keyboard-title {
             color: #00ff00;
@@ -209,29 +260,41 @@
 
         .keyboard {
             display: grid;
-            gap: 3px;
+            gap: 4px;  /* Slightly larger gaps */
             max-width: 100%;
         }
 
         .keyboard-row {
             display: flex;
-            gap: 3px;
+            gap: 4px;  /* Slightly larger gaps */
             justify-content: center;
         }
 
+        /* Keyboard keys - scaled up for better usability
+           
+           SCALING RATIONALE:
+           - Padding: 12px (50% larger than default 8px)
+           - Font: 1rem (25% larger than default 0.8rem)  
+           - Min-width: 40px (33% larger than default 30px)
+           - Gaps: 4px (33% larger than default 3px)
+           
+           This scaling provides better touch targets and visual balance
+           with the larger video display while maintaining authentic feel.
+        */
         .key {
             background: linear-gradient(145deg, #333, #222);
             color: #00ff00;
             border: 1px solid #00ff00;
-            border-radius: 3px;
-            padding: 8px;
+            border-radius: 4px;  /* Slightly larger border radius */
+            padding: 12px;       /* Larger padding (was 8px) - 50% increase */
             font-family: 'Courier New', monospace;
-            font-size: 0.8rem;
+            font-size: 1rem;     /* Larger font (was 0.8rem) - 25% increase */
             cursor: pointer;
             transition: all 0.1s ease;
-            min-width: 30px;
+            min-width: 40px;     /* Larger minimum width (was 30px) - 33% increase */
             text-align: center;
             user-select: none;
+            font-weight: bold;   /* Make text more prominent */
         }
 
         .key:hover {
@@ -247,19 +310,19 @@
 
         .key.space {
             flex: 1;
-            min-width: 120px;
+            min-width: 160px;  /* Larger space bar (was 120px) */
         }
 
         .key.wide {
-            min-width: 50px;
+            min-width: 70px;   /* Larger wide keys (was 50px) */
         }
 
         .log-container {
+            flex: 1;
             background: rgba(0, 0, 0, 0.8);
             border-radius: 10px;
             padding: 1rem;
             border: 2px solid #00ff00;
-            margin-top: 1rem;
             max-height: 200px;
             overflow-y: auto;
         }
@@ -293,7 +356,7 @@
         }
 
         @media (max-width: 768px) {
-            .main-container {
+            .controls-and-log-container {
                 flex-direction: column;
             }
             
@@ -302,9 +365,17 @@
             }
             
             .key {
-                padding: 6px;
-                font-size: 0.7rem;
-                min-width: 25px;
+                padding: 8px;      /* Smaller on mobile */
+                font-size: 0.8rem; /* Smaller font on mobile */
+                min-width: 32px;   /* Smaller minimum width on mobile */
+            }
+
+            .key.space {
+                min-width: 120px;  /* Smaller space bar on mobile */
+            }
+
+            .key.wide {
+                min-width: 50px;   /* Smaller wide keys on mobile */
             }
         }
 
@@ -379,10 +450,11 @@
     </div>
 
     <div class="main-container">
+        <!-- Full-width video stream at the top -->
         <div class="stream-container">
             <div class="stream-header">
                 <div class="stream-title">📡 Live Emulator Stream</div>
-                <div class="quality-badge">ZX Spectrum 512x384 @ 2.5Mbps</div>
+                <div class="quality-badge">ZX Spectrum 640x480 @ 2.5Mbps</div>
             </div>
             
             <div class="stream-info">
@@ -402,90 +474,94 @@
             </div>
         </div>
 
-        <div class="controls-container">
-            <div class="control-panel">
-                <h3>🎮 Emulator Controls</h3>
-                <div class="emulator-controls">
-                    <button id="startBtn" class="control-button" onclick="startEmulator()">
-                        🚀 Start Emulator
-                    </button>
-                    <button id="stopBtn" class="control-button" onclick="stopEmulator()" disabled>
-                        ⏹️ Stop Emulator
-                    </button>
-                    <button class="control-button" onclick="requestStatus()">
-                        📊 Get Status
-                    </button>
-                    <button class="control-button" onclick="takeScreenshot()">
-                        📸 Screenshot
-                    </button>
-                    <button class="control-button" onclick="resetEmulator()">
-                        🔄 Reset Emulator
-                    </button>
-                    <button class="control-button" onclick="sendCommand('LOAD &quot;&quot;')">
-                        📁 Load Program
-                    </button>
+        <!-- Full-width keyboard underneath the video -->
+        <div class="keyboard-container">
+            <h3 class="keyboard-title">⌨️ ZX Spectrum Keyboard</h3>
+            <div class="keyboard">
+                <div class="keyboard-row">
+                    <div class="key" data-key="1">1 !</div>
+                    <div class="key" data-key="2">2 @</div>
+                    <div class="key" data-key="3">3 #</div>
+                    <div class="key" data-key="4">4 $</div>
+                    <div class="key" data-key="5">5 %</div>
+                    <div class="key" data-key="6">6 &</div>
+                    <div class="key" data-key="7">7 '</div>
+                    <div class="key" data-key="8">8 (</div>
+                    <div class="key" data-key="9">9 )</div>
+                    <div class="key" data-key="0">0 _</div>
+                </div>
+                <div class="keyboard-row">
+                    <div class="key" data-key="Q">Q</div>
+                    <div class="key" data-key="W">W</div>
+                    <div class="key" data-key="E">E</div>
+                    <div class="key" data-key="R">R</div>
+                    <div class="key" data-key="T">T</div>
+                    <div class="key" data-key="Y">Y</div>
+                    <div class="key" data-key="U">U</div>
+                    <div class="key" data-key="I">I</div>
+                    <div class="key" data-key="O">O</div>
+                    <div class="key" data-key="P">P</div>
+                </div>
+                <div class="keyboard-row">
+                    <div class="key" data-key="A">A</div>
+                    <div class="key" data-key="S">S</div>
+                    <div class="key" data-key="D">D</div>
+                    <div class="key" data-key="F">F</div>
+                    <div class="key" data-key="G">G</div>
+                    <div class="key" data-key="H">H</div>
+                    <div class="key" data-key="J">J</div>
+                    <div class="key" data-key="K">K</div>
+                    <div class="key" data-key="L">L</div>
+                    <div class="key wide" data-key="ENTER">ENTER</div>
+                </div>
+                <div class="keyboard-row">
+                    <div class="key wide" data-key="SHIFT">SHIFT</div>
+                    <div class="key" data-key="Z">Z</div>
+                    <div class="key" data-key="X">X</div>
+                    <div class="key" data-key="C">C</div>
+                    <div class="key" data-key="V">V</div>
+                    <div class="key" data-key="B">B</div>
+                    <div class="key" data-key="N">N</div>
+                    <div class="key" data-key="M">M</div>
+                    <div class="key wide" data-key="SYMBOL">SYM</div>
+                </div>
+                <div class="keyboard-row">
+                    <div class="key space" data-key="SPACE">SPACE</div>
+                </div>
+                <div class="keyboard-row" style="margin-top: 10px;">
+                    <div class="key" data-key="DELETE" title="Delete/Backspace">DEL</div>
+                    <div class="key" data-key="Q" title="Cursor Up (Games: Up)">↑</div>
+                    <div class="key" data-key="A" title="Cursor Left (Games: Left)">←</div>
+                    <div class="key" data-key="O" title="Cursor Down (Games: Down)">↓</div>
+                    <div class="key" data-key="P" title="Cursor Right (Games: Right)">→</div>
                 </div>
             </div>
+        </div>
 
-            <div class="keyboard-container">
-                <h3 class="keyboard-title">⌨️ ZX Spectrum Keyboard</h3>
-                <div class="keyboard">
-                    <div class="keyboard-row">
-                        <div class="key" data-key="1">1 !</div>
-                        <div class="key" data-key="2">2 @</div>
-                        <div class="key" data-key="3">3 #</div>
-                        <div class="key" data-key="4">4 $</div>
-                        <div class="key" data-key="5">5 %</div>
-                        <div class="key" data-key="6">6 &</div>
-                        <div class="key" data-key="7">7 '</div>
-                        <div class="key" data-key="8">8 (</div>
-                        <div class="key" data-key="9">9 )</div>
-                        <div class="key" data-key="0">0 _</div>
-                    </div>
-                    <div class="keyboard-row">
-                        <div class="key" data-key="Q">Q</div>
-                        <div class="key" data-key="W">W</div>
-                        <div class="key" data-key="E">E</div>
-                        <div class="key" data-key="R">R</div>
-                        <div class="key" data-key="T">T</div>
-                        <div class="key" data-key="Y">Y</div>
-                        <div class="key" data-key="U">U</div>
-                        <div class="key" data-key="I">I</div>
-                        <div class="key" data-key="O">O</div>
-                        <div class="key" data-key="P">P</div>
-                    </div>
-                    <div class="keyboard-row">
-                        <div class="key" data-key="A">A</div>
-                        <div class="key" data-key="S">S</div>
-                        <div class="key" data-key="D">D</div>
-                        <div class="key" data-key="F">F</div>
-                        <div class="key" data-key="G">G</div>
-                        <div class="key" data-key="H">H</div>
-                        <div class="key" data-key="J">J</div>
-                        <div class="key" data-key="K">K</div>
-                        <div class="key" data-key="L">L</div>
-                        <div class="key wide" data-key="ENTER">ENTER</div>
-                    </div>
-                    <div class="keyboard-row">
-                        <div class="key wide" data-key="SHIFT">SHIFT</div>
-                        <div class="key" data-key="Z">Z</div>
-                        <div class="key" data-key="X">X</div>
-                        <div class="key" data-key="C">C</div>
-                        <div class="key" data-key="V">V</div>
-                        <div class="key" data-key="B">B</div>
-                        <div class="key" data-key="N">N</div>
-                        <div class="key" data-key="M">M</div>
-                        <div class="key wide" data-key="SYMBOL">SYM</div>
-                    </div>
-                    <div class="keyboard-row">
-                        <div class="key space" data-key="SPACE">SPACE</div>
-                    </div>
-                    <div class="keyboard-row" style="margin-top: 10px;">
-                        <div class="key" data-key="DELETE" title="Delete/Backspace">DEL</div>
-                        <div class="key" data-key="Q" title="Cursor Up (Games: Up)">↑</div>
-                        <div class="key" data-key="A" title="Cursor Left (Games: Left)">←</div>
-                        <div class="key" data-key="O" title="Cursor Down (Games: Down)">↓</div>
-                        <div class="key" data-key="P" title="Cursor Right (Games: Right)">→</div>
+        <!-- Controls and log at the bottom in a side-by-side layout -->
+        <div class="controls-and-log-container">
+            <div class="controls-container">
+                <div class="control-panel">
+                    <h3>🎮 Emulator Controls</h3>
+                    <div class="emulator-controls">
+                        <button id="startBtn" class="control-button" onclick="startEmulator()">
+                            🚀 Start Emulator
+                        </button>
+                        <button id="stopBtn" class="control-button" onclick="stopEmulator()" disabled>
+                            ⏹️ Stop Emulator
+                        </button>
+                        <button class="control-button" onclick="requestStatus()">
+                            📊 Get Status
+                        </button>
+                        <button class="control-button" onclick="takeScreenshot()">
+                            📸 Screenshot
+                        </button>
+                        <button class="control-button" onclick="resetEmulator()">
+                            🔄 Reset Emulator
+                        </button>
+                        <button class="control-button" onclick="sendCommand('LOAD &quot;&quot;')">
+                            📁 Load Program
+                        </button>
                     </div>
                 </div>
             </div>

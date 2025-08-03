@@ -2,31 +2,28 @@
 
 A complete web-based ZX Spectrum emulator with real-time video streaming, YouTube live broadcasting, mouse support, and authentic keyboard interface.
 
-## Status: FULLY INTERACTIVE EMULATOR v7! 🎮
+## Status: FULLY INTERACTIVE EMULATOR v8! 🎮
 
-### ✅ **Completed Components:**
-- ✅ Web interface with authentic ZX Spectrum keyboard
-- ✅ AWS CloudFront global distribution
-- ✅ Python WebSocket server on ECS Fargate
-- ✅ HLS video streaming pipeline (S3 → Browser)
-- ✅ Application Load Balancer with health checks
-- ✅ Complete AWS infrastructure automation
-- ✅ Multi-user WebSocket support
-- ✅ Screenshot capture capability
-- ✅ Fullscreen mode
-- ✅ **YouTube Live Streaming Integration**
-- ✅ **Real-time RTMP streaming to YouTube**
-- ✅ **WebSocket connection routing resolved**
-- ✅ **Pre-built Docker image deployment strategy**
-- ✅ **Reliable container orchestration with ECS Fargate**
-- ✅ **FUSE emulator integration with X11 virtual display**
-- ✅ **Interactive button press handling**
-- ✅ **Complete emulator control via WebSocket**
-- ✅ **HLS segment naming fix for streaming pipeline**
-- ✅ **Video scaling fixes with pixel-perfect rendering**
-- ✅ **Mouse support with coordinate mapping**
-- ✅ **Cursor hiding from video streams**
-- ✅ **Virtual keyboard click-only behavior**
+### ✅ **Latest Achievements (v8 - August 2025):**
+
+**🎥 Video Streaming Pipeline - COMPLETELY FIXED:**
+- ✅ **Screen Cut-off Resolved**: Fixed capture dimensions from 256x192 to 320x240 to match actual FUSE window
+- ✅ **WebSocket Handler Fixed**: Corrected function signature compatibility issue
+- ✅ **Full Screen Capture**: Now captures complete emulator display with no missing pixels
+- ✅ **Dual Streaming**: Both HLS (web) and RTMP (YouTube) streams working perfectly
+
+**🖥️ Frontend Layout - COMPLETELY REDESIGNED:**
+- ✅ **Full-Width Video**: 960px maximum width for immersive experience
+- ✅ **Video-First Layout**: Prioritizes video display with keyboard directly underneath
+- ✅ **Proportional Scaling**: Keyboard scaled 50% larger to match video size
+- ✅ **Optimized UX**: Controls and logs moved to bottom for reduced clutter
+- ✅ **Responsive Design**: Perfect scaling on all screen sizes
+
+**🔧 Technical Infrastructure:**
+- ✅ **Production Deployment**: ECS Task Definition revision 47 with both fixes
+- ✅ **Docker Image**: `spectrum-emulator:framebuffer-capture-fixed`
+- ✅ **Version**: 1.0.0-framebuffer-capture-fixed
+- ✅ **Health Checks**: All systems stable and operational
 
 ### 🚧 **In Progress:**
 - 🔄 Game loading and state management

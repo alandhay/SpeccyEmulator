@@ -360,7 +360,7 @@ class ZXSpectrumEmulatorServer:
                 '-f', 'pulse',
                 '-i', 'default',
                 # Video filters: scale to 2x size with nearest neighbor for pixel-perfect scaling
-                '-vf', f"scale={output_width}:{output_height}:flags=neighbor,drawtext=text='v1.0.0-v7':fontcolor=yellow:fontsize=12:x=5:y=5:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,drawtext=text='INTERACTIVE':fontcolor=white:fontsize=14:x=w-tw-5:y=h-th-5:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                '-vf', f"scale={output_width}:{output_height}:flags=neighbor",
                 '-c:v', 'libx264',
                 '-preset', 'ultrafast',
                 '-tune', 'zerolatency',

@@ -1,0 +1,98 @@
+{
+  "family": "spectrum-emulator-streaming",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "arn:aws:iam::043309319786:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::043309319786:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "spectrum-emulator-streamer",
+      "image": "043309319786.dkr.ecr.us-east-1.amazonaws.com/spectrum-emulator:fixed-v5",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "protocol": "tcp"
+        },
+        {
+          "containerPort": 8765,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "DISPLAY",
+          "value": ":99"
+        },
+        {
+          "name": "SDL_VIDEODRIVER",
+          "value": "x11"
+        },
+        {
+          "name": "SDL_AUDIODRIVER",
+          "value": "pulse"
+        },
+        {
+          "name": "PULSE_RUNTIME_PATH",
+          "value": "/tmp/pulse"
+        },
+        {
+          "name": "STREAM_BUCKET",
+          "value": "spectrum-emulator-stream-dev-043309319786"
+        },
+        {
+          "name": "YOUTUBE_STREAM_KEY",
+          "value": "0ebh-efdh-9qtq-2eq3-e6hz"
+        },
+        {
+          "name": "CAPTURE_SIZE",
+          "value": "640x480"
+        },
+        {
+          "name": "CAPTURE_OFFSET",
+          "value": "80,60"
+        },
+        {
+          "name": "DISPLAY_SIZE",
+          "value": "640x480"
+        },
+        {
+          "name": "SCALE_FACTOR",
+          "value": "1"
+        },
+        {
+          "name": "VERSION",
+          "value": "1.0.0-fixed-v5-child-window"
+        },
+        {
+          "name": "BUILD_TIME",
+          "value": "2025-08-02T22:20:00Z"
+        },
+        {
+          "name": "BUILD_HASH",
+          "value": "fixed-v5-child-window-capture"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/spectrum-emulator-streaming",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "curl -f http://localhost:8080/health || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 10,
+        "retries": 3,
+        "startPeriod": 120
+      }
+    }
+  ]
+}
