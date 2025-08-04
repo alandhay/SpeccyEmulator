@@ -15,7 +15,7 @@ echo "🎮 IMPROVED: No Cursor + 90% Scaling + Perfect Center"
 echo "====================================================="
 
 # YouTube streaming configuration
-STREAM_KEY="3gpw-mdh2-6vwy-txb8-ebam"
+STREAM_KEY="8w86-k4v4-4trq-pvwy-6v58"
 RTMP_URL="rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
 
 echo "Stream Key: $STREAM_KEY"
