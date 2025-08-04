@@ -1,0 +1,300 @@
+/* ZX Spectrum Emulator Local Test Styles */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Courier New', monospace;
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    color: #ffffff;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+}
+
+header h1 {
+    font-size: 2.5em;
+    margin-bottom: 15px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.status-bar {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.status-bar span {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.status-connected {
+    background: #4CAF50;
+    color: white;
+}
+
+.status-disconnected {
+    background: #f44336;
+    color: white;
+}
+
+.status-running {
+    background: #2196F3;
+    color: white;
+}
+
+.status-stopped {
+    background: #757575;
+    color: white;
+}
+
+main {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 30px;
+}
+
+.video-section, .controls-section, .keyboard-section, .logs-section {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 25px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.video-section h2, .controls-section h2, .keyboard-section h2, .logs-section h2 {
+    margin-bottom: 20px;
+    color: #FFD700;
+    font-size: 1.5em;
+}
+
+.video-container {
+    position: relative;
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto 20px;
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+#video-player {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2em;
+    cursor: pointer;
+    transition: opacity 0.3s;
+}
+
+.video-overlay:hover {
+    opacity: 0.9;
+}
+
+.stream-info {
+    text-align: center;
+    margin-top: 15px;
+}
+
+.stream-info p {
+    margin-bottom: 10px;
+    word-break: break-all;
+}
+
+.control-buttons {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* ZX Spectrum Keyboard Styles */
+.zx-keyboard {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.key-row {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+}
+
+.key {
+    min-width: 45px;
+    height: 45px;
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    color: #ecf0f1;
+    border: 2px solid #7f8c8d;
+    border-radius: 8px;
+    font-size: 0.9em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+.key:hover {
+    background: linear-gradient(135deg, #34495e, #2c3e50);
+    border-color: #3498db;
+    transform: translateY(-1px);
+}
+
+.key:active, .key.pressed {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    border-color: #e74c3c;
+    transform: translateY(1px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.space-key {
+    min-width: 200px;
+}
+
+/* Logs Section */
+.logs-section {
+    max-height: 400px;
+}
+
+#log-container {
+    background: #000;
+    border-radius: 8px;
+    padding: 15px;
+    height: 300px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+    border: 1px solid #333;
+}
+
+#log-output {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    line-height: 1.4;
+    color: #00ff00;
+}
+
+.log-entry {
+    margin-bottom: 5px;
+    padding: 2px 0;
+}
+
+.log-info {
+    color: #00ff00;
+}
+
+.log-error {
+    color: #ff4444;
+}
+
+.log-warning {
+    color: #ffaa00;
+}
+
+.log-success {
+    color: #44ff44;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    header h1 {
+        font-size: 2em;
+    }
+    
+    .status-bar {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .control-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .key {
+        min-width: 35px;
+        height: 35px;
+        font-size: 0.8em;
+    }
+    
+    .space-key {
+        min-width: 150px;
+    }
+}
+
+/* Animation for status changes */
+.status-bar span {
+    transition: all 0.3s ease;
+}
+
+/* Pulse animation for active states */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.status-connected {
+    animation: pulse 2s infinite;
+}

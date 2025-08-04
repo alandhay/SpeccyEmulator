@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZEsarUX Key Input Test Results</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #00ff00;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #ffff00;
+            text-align: center;
+            border-bottom: 2px solid #00ff00;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            color: #00ffff;
+            margin-top: 30px;
+        }
+        
+        .test-info {
+            background: #001100;
+            border: 1px solid #00ff00;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .screenshot-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .screenshot-container {
+            flex: 1;
+            min-width: 300px;
+            background: #001100;
+            border: 1px solid #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .screenshot-container h3 {
+            color: #ffff00;
+            margin-top: 0;
+        }
+        
+        .screenshot-container img {
+            max-width: 100%;
+            height: auto;
+            border: 2px solid #00ff00;
+            background: #fff;
+        }
+        
+        .status {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        .status.success {
+            background: #004400;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+        }
+        
+        .status.failure {
+            background: #440000;
+            color: #ff0000;
+            border: 1px solid #ff0000;
+        }
+        
+        .status.unknown {
+            background: #444400;
+            color: #ffff00;
+            border: 1px solid #ffff00;
+        }
+        
+        .technical-details {
+            background: #000011;
+            border: 1px solid #0000ff;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .technical-details h3 {
+            color: #0088ff;
+            margin-top: 0;
+        }
+        
+        .code {
+            background: #222;
+            color: #fff;
+            padding: 10px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+        
+        .url-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .url-list li {
+            margin: 10px 0;
+        }
+        
+        .url-list a {
+            color: #00ffff;
+            text-decoration: none;
+        }
+        
+        .url-list a:hover {
+            color: #ffff00;
+            text-decoration: underline;
+        }
+        
+        .refresh-button {
+            background: #004400;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 5px;
+        }
+        
+        .refresh-button:hover {
+            background: #006600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 ZEsarUX Key Input Test Results</h1>
+        
+        <div class="test-info">
+            <h2>📋 Test Overview</h2>
+            <p><strong>Goal:</strong> Prove that ZEsarUX can receive and process key input via ZRCP (ZEsarUX Remote Command Protocol)</p>
+            <p><strong>Method:</strong> Take before/after screenshots to visually verify key input works</p>
+            <p><strong>Test Date:</strong> <span id="test-date">August 3, 2025</span></p>
+            <p><strong>ZEsarUX Version:</strong> 12.0 "Bubble Bobble edition"</p>
+        </div>
+        
+        <div id="status-section">
+            <h2>🔍 Test Status</h2>
+            <div id="test-status" class="status unknown">
+                ⏳ Loading test results...
+            </div>
+        </div>
+        
+        <div class="screenshot-section">
+            <div class="screenshot-container">
+                <h3>📸 Before Key Input</h3>
+                <p>ZX Spectrum initial state</p>
+                <img id="before-screenshot" src="https://speccytestscreenshots03082025.s3.us-east-1.amazonaws.com/test.bmp" 
+                     alt="Before screenshot" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <div style="display:none; color:#ff0000;">❌ Screenshot not available</div>
+            </div>
+            
+            <div class="screenshot-container">
+                <h3>📸 After Key Input</h3>
+                <p>After sending "HELLO WORLD"</p>
+                <img id="after-screenshot" src="https://speccytestscreenshots03082025.s3.us-east-1.amazonaws.com/after.bmp" 
+                     alt="After screenshot" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <div style="display:none; color:#ff0000;">❌ Screenshot not available</div>
+            </div>
+        </div>
+        
+        <div class="technical-details">
+            <h3>🔧 Technical Details</h3>
+            <p><strong>Emulator:</strong> ZEsarUX 12.0 running ZX Spectrum 48k</p>
+            <p><strong>Mode:</strong> Headless (--vo null --ao null)</p>
+            <p><strong>Control Protocol:</strong> ZRCP on port 10000</p>
+            <p><strong>Key Command:</strong> <code class="code">send-keys-string HELLO WORLD</code></p>
+            <p><strong>Screenshot Command:</strong> <code class="code">save-screen filename.bmp</code></p>
+        </div>
+        
+        <div class="test-info">
+            <h2>🌐 S3 Resources</h2>
+            <ul class="url-list">
+                <li>📁 <a href="https://speccytestscreenshots03082025.s3.us-east-1.amazonaws.com/" target="_blank">S3 Bucket Contents</a></li>
+                <li>📸 <a href="https://speccytestscreenshots03082025.s3.us-east-1.amazonaws.com/test.bmp" target="_blank">Test Screenshot (BMP)</a></li>
+                <li>📸 <a href="https://speccytestscreenshots03082025.s3.us-east-1.amazonaws.com/before.bmp" target="_blank">Before Screenshot</a></li>
+                <li>📸 <a href="https://speccytestscreenshots03082025.s3.us-east-1.amazonaws.com/after.bmp" target="_blank">After Screenshot</a></li>
+                <li>📊 <a href="https://speccytestscreenshots03082025.s3.us-east-1.amazonaws.com/test_results.json" target="_blank">Test Results JSON</a></li>
+            </ul>
+        </div>
+        
+        <div class="test-info">
+            <h2>🎯 What This Proves</h2>
+            <div id="conclusion-section">
+                <p><strong>If screenshots are different:</strong> ✅ ZEsarUX successfully processes key input via ZRCP</p>
+                <p><strong>If screenshots are identical:</strong> ❌ Key input may not be reaching the emulated ZX Spectrum</p>
+                <p><strong>Current Status:</strong> <span id="conclusion-text">Analyzing screenshots...</span></p>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <button class="refresh-button" onclick="location.reload()">🔄 Refresh Results</button>
+            <button class="refresh-button" onclick="checkTestResults()">📊 Check Latest Results</button>
+        </div>
+        
+        <div class="technical-details">
+            <h3>📝 Test Log</h3>
+            <div id="test-log" class="code">
+                Loading test information...<br>
+                ZEsarUX started in headless mode<br>
+                ZRCP protocol enabled on port 10000<br>
+                Screenshot capability verified<br>
+                Key input test in progress...<br>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to check test results
+        async function checkTestResults() {
+            try {
+                const response = await fetch('https://speccytestscreenshots03082025.s3.us-east-1.amazonaws.com/test_results.json');
+                if (response.ok) {
+                    const results = await response.json();
+                    updateTestStatus(results);
+                } else {
+                    document.getElementById('test-status').innerHTML = '⚠️ Test results not yet available';
+                    document.getElementById('test-status').className = 'status unknown';
+                }
+            } catch (error) {
+                console.log('Test results not available yet:', error);
+                document.getElementById('test-status').innerHTML = '⏳ Test in progress or results not uploaded yet';
+                document.getElementById('test-status').className = 'status unknown';
+            }
+        }
+        
+        function updateTestStatus(results) {
+            const statusElement = document.getElementById('test-status');
+            const conclusionElement = document.getElementById('conclusion-text');
+            
+            if (results.screenshots_different) {
+                statusElement.innerHTML = '✅ SUCCESS: Screenshots are different - Key input WORKS!';
+                statusElement.className = 'status success';
+                conclusionElement.innerHTML = '✅ ZEsarUX successfully processes key input via ZRCP';
+            } else {
+                statusElement.innerHTML = '❌ FAILURE: Screenshots are identical - Key input may NOT work';
+                statusElement.className = 'status failure';
+                conclusionElement.innerHTML = '❌ Key input may not be reaching the emulated ZX Spectrum';
+            }
+            
+            // Update test log
+            const logElement = document.getElementById('test-log');
+            logElement.innerHTML = `
+                Test completed: ${results.timestamp}<br>
+                ZEsarUX version: ${results.zesarux_version}<br>
+                Key sequence sent: "${results.key_sequence}"<br>
+                Before screenshot size: ${results.before_size} bytes<br>
+                After screenshot size: ${results.after_size} bytes<br>
+                Screenshots different: ${results.screenshots_different}<br>
+                Conclusion: ${results.test_conclusion}
+            `;
+        }
+        
+        // Check results on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            checkTestResults();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(checkTestResults, 30000);
+        });
+        
+        // Handle image load errors
+        document.getElementById('before-screenshot').onerror = function() {
+            this.style.display = 'none';
+            this.nextElementSibling.style.display = 'block';
+        };
+        
+        document.getElementById('after-screenshot').onerror = function() {
+            this.style.display = 'none';
+            this.nextElementSibling.style.display = 'block';
+        };
+    </script>
+</body>
+</html>

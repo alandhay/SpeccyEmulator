@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# YouTube Streaming Diagnostics
+echo "🔍 YouTube Streaming Diagnostics"
+echo "================================"
+
+STREAM_KEY="3gpw-mdh2-6vwy-txb8-ebam"
+
+echo "1. Testing RTMP endpoint connectivity..."
+echo "========================================"
+timeout 5 bash -c "echo 'test' | nc a.rtmp.youtube.com 1935" 2>/dev/null && echo "✅ Primary endpoint reachable" || echo "❌ Primary endpoint not reachable"
+timeout 5 bash -c "echo 'test' | nc b.rtmp.youtube.com 1935" 2>/dev/null && echo "✅ Backup endpoint reachable" || echo "❌ Backup endpoint not reachable"
+
+echo ""
+echo "2. Stream key validation..."
+echo "=========================="
+echo "Stream key: $STREAM_KEY"
+echo "Key length: ${#STREAM_KEY} characters"
+if [ ${#STREAM_KEY} -eq 24 ]; then
+    echo "✅ Key length looks correct"
+else
+    echo "⚠️  Key length unusual (should be 24 chars)"
+fi
+
+echo ""
+echo "3. Account checklist..."
+echo "======================"
+echo "Please verify in YouTube Studio:"
+echo ""
+echo "A. Go to https://studio.youtube.com/channel/UC/livestreaming"
+echo "B. Check 'Enable live streaming' is ON"
+echo "C. Verify no restrictions or warnings"
+echo "D. Check if account is verified (phone number)"
+echo "E. Ensure no recent policy violations"
+echo ""
+echo "4. Stream settings checklist..."
+echo "=============================="
+echo "In YouTube Studio → Go Live → Stream:"
+echo ""
+echo "A. Stream key matches: $STREAM_KEY"
+echo "B. Latency set to 'Low latency' or 'Ultra-low latency'"
+echo "C. No audience restrictions"
+echo "D. Stream title is set"
+echo "E. Visibility is not set to 'Private'"
+echo ""
+echo "5. Alternative test - Try manual stream setup..."
+echo "==============================================="
+echo "1. Go to YouTube Studio → Go Live"
+echo "2. Choose 'Webcam' instead of 'Stream'"
+echo "3. See if that works first"
+echo "4. Then switch back to 'Stream' tab"
+echo ""
+echo "6. Common issues..."
+echo "=================="
+echo "- New YouTube accounts may have 24-hour delay for live streaming"
+echo "- Some accounts need phone verification first"
+echo "- Copyright strikes can disable live streaming"
+echo "- Very short streams (< 30 seconds) sometimes don't appear"

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZX Spectrum Emulator - Local Test</title>
+    <link rel="stylesheet" href="css/spectrum.css">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 ZX Spectrum Emulator - Local Test</h1>
+            <div class="status-bar">
+                <span id="connection-status" class="status-disconnected">Disconnected</span>
+                <span id="emulator-status" class="status-stopped">Emulator Stopped</span>
+                <span id="stream-status" class="status-stopped">Stream Stopped</span>
+            </div>
+        </header>
+
+        <main>
+            <div class="video-section">
+                <h2>📺 Live Stream</h2>
+                <div class="video-container">
+                    <video id="video-player" controls muted autoplay>
+                        <p>Your browser doesn't support HTML5 video.</p>
+                    </video>
+                    <div id="video-overlay" class="video-overlay">
+                        <p>Click to interact with emulator</p>
+                    </div>
+                </div>
+                <div class="stream-info">
+                    <p><strong>Local HLS Stream:</strong> <span id="stream-url">http://localhost:8000/stream/hls/stream.m3u8</span></p>
+                    <button id="reload-stream">🔄 Reload Stream</button>
+                </div>
+            </div>
+
+            <div class="controls-section">
+                <h2>🎮 Controls</h2>
+                <div class="control-buttons">
+                    <button id="start-emulator">▶️ Start Emulator</button>
+                    <button id="connect-websocket">🔌 Connect WebSocket</button>
+                    <button id="test-key">🔤 Test Key (SPACE)</button>
+                    <button id="get-status">📊 Get Status</button>
+                </div>
+            </div>
+
+            <div class="keyboard-section">
+                <h2>⌨️ Virtual ZX Spectrum Keyboard</h2>
+                <div class="zx-keyboard">
+                    <!-- Row 1 -->
+                    <div class="key-row">
+                        <button class="key" data-key="1">1</button>
+                        <button class="key" data-key="2">2</button>
+                        <button class="key" data-key="3">3</button>
+                        <button class="key" data-key="4">4</button>
+                        <button class="key" data-key="5">5</button>
+                        <button class="key" data-key="6">6</button>
+                        <button class="key" data-key="7">7</button>
+                        <button class="key" data-key="8">8</button>
+                        <button class="key" data-key="9">9</button>
+                        <button class="key" data-key="0">0</button>
+                    </div>
+                    <!-- Row 2 -->
+                    <div class="key-row">
+                        <button class="key" data-key="Q">Q</button>
+                        <button class="key" data-key="W">W</button>
+                        <button class="key" data-key="E">E</button>
+                        <button class="key" data-key="R">R</button>
+                        <button class="key" data-key="T">T</button>
+                        <button class="key" data-key="Y">Y</button>
+                        <button class="key" data-key="U">U</button>
+                        <button class="key" data-key="I">I</button>
+                        <button class="key" data-key="O">O</button>
+                        <button class="key" data-key="P">P</button>
+                    </div>
+                    <!-- Row 3 -->
+                    <div class="key-row">
+                        <button class="key" data-key="A">A</button>
+                        <button class="key" data-key="S">S</button>
+                        <button class="key" data-key="D">D</button>
+                        <button class="key" data-key="F">F</button>
+                        <button class="key" data-key="G">G</button>
+                        <button class="key" data-key="H">H</button>
+                        <button class="key" data-key="J">J</button>
+                        <button class="key" data-key="K">K</button>
+                        <button class="key" data-key="L">L</button>
+                        <button class="key" data-key="ENTER">ENTER</button>
+                    </div>
+                    <!-- Row 4 -->
+                    <div class="key-row">
+                        <button class="key" data-key="SHIFT">SHIFT</button>
+                        <button class="key" data-key="Z">Z</button>
+                        <button class="key" data-key="X">X</button>
+                        <button class="key" data-key="C">C</button>
+                        <button class="key" data-key="V">V</button>
+                        <button class="key" data-key="B">B</button>
+                        <button class="key" data-key="N">N</button>
+                        <button class="key" data-key="M">M</button>
+                        <button class="key" data-key="SHIFT">SHIFT</button>
+                    </div>
+                    <!-- Row 5 -->
+                    <div class="key-row">
+                        <button class="key space-key" data-key="SPACE">SPACE</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="logs-section">
+                <h2>📝 Logs</h2>
+                <div id="log-container">
+                    <div id="log-output"></div>
+                </div>
+                <button id="clear-logs">🗑️ Clear Logs</button>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/spectrum-local.js"></script>
+</body>
+</html>
